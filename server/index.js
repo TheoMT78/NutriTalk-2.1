@@ -15,7 +15,7 @@ app.use(express.json());
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 100 });
 app.use(limiter);
 
-// middleware to protect authenticated routes
+// Middleware de protection des routes authentifiées
 const authMiddleware = (req, res, next) => {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -30,6 +30,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = await createDb();
 
+/* ----- ROUTES PUBLIQUES (pas de token requis) ----- */
 app.post('/api/register',
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
@@ -46,7 +47,8 @@ app.post('/api/register',
       const msg = err instanceof Error ? err.message : 'Registration failed';
       res.status(400).json({ error: msg });
     }
-  });
+  }
+);
 
 app.post('/api/login',
   body('email').isEmail(),
@@ -63,9 +65,10 @@ app.post('/api/login',
       const msg = err instanceof Error ? err.message : 'Invalid credentials';
       res.status(401).json({ error: msg });
     }
-  });
+  }
+);
 
-// all routes below this point require authentication
+/* ----- ROUTES PROTEGEES (token requis) ----- */
 const protectedRouter = express.Router();
 protectedRouter.use(authMiddleware);
 
@@ -101,11 +104,12 @@ protectedRouter.post('/logs/:userId/:date',
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
-  const { userId, date } = req.params;
-  await db.upsertLog(userId, date, req.body);
-  res.json({ success: true });
-});
+    if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
+    const { userId, date } = req.params;
+    await db.upsertLog(userId, date, req.body);
+    res.json({ success: true });
+  }
+);
 
 protectedRouter.get('/weights/:userId', async (req, res) => {
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -120,11 +124,12 @@ protectedRouter.post('/weights/:userId',
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
-  const { userId } = req.params;
-  await db.upsertWeights(userId, req.body);
-  res.json({ success: true });
-});
+    if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
+    const { userId } = req.params;
+    await db.upsertWeights(userId, req.body);
+    res.json({ success: true });
+  }
+);
 
 protectedRouter.get('/sync/:userId', async (req, res) => {
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -134,7 +139,7 @@ protectedRouter.get('/sync/:userId', async (req, res) => {
   res.json({ profile: user, logs, weights });
 });
 
-// mount authenticated router after public routes
+// ATTENTION : ce montage DOIT être APRES les routes publiques !
 app.use('/api', protectedRouter);
 
 const PORT = process.env.PORT || 3001;
