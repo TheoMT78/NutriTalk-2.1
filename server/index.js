@@ -12,14 +12,30 @@ import { createDb } from './db.js';
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Pour Render/proxy : IMPORTANT !
+app.set('trust proxy', 1);
+
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 100 });
 app.use(limiter);
+
+// Middleware d'authentification
+const authMiddleware = (req, res, next) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Invalid token' });
+  req.userId = decoded.userId;
+  next();
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = await createDb();
 
-// PUBLIC ROUTES : PAS DE TOKEN
+// --- ROUTES PUBLIQUES --- //
+
 app.post('/api/register',
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
@@ -55,16 +71,7 @@ app.post('/api/login',
     }
   });
 
-// PROTECTED ROUTES : TOKEN REQUIS
-const authMiddleware = (req, res, next) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Missing token' });
-  const decoded = verifyToken(token);
-  if (!decoded) return res.status(401).json({ error: 'Invalid token' });
-  req.userId = decoded.userId;
-  next();
-};
+// --- ROUTES PROTEGÉES --- //
 
 const protectedRouter = express.Router();
 protectedRouter.use(authMiddleware);
@@ -134,9 +141,10 @@ protectedRouter.get('/sync/:userId', async (req, res) => {
   res.json({ profile: user, logs, weights });
 });
 
-// Mount ONLY AFTER public routes
+// Utilise le router protégé après les routes publiques
 app.use('/api', protectedRouter);
 
+// --- SERVER --- //
 const PORT = process.env.PORT || 3001;
 if (process.env.NODE_ENV !== 'test') {
   if (process.env.SSL_KEY && process.env.SSL_CERT) {
@@ -155,3 +163,4 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 export default app;
+
