@@ -4,15 +4,11 @@ import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { v4 as uuid } from 'uuid';
-import bcrypt from 'bcryptjs';
 import https from 'https';
 import fs from 'fs';
-import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'nutritalk-secret';
+import { registerUser, loginUser, verifyToken } from './authService.js';
 
 const app = express();
 app.use(cors());
@@ -25,13 +21,10 @@ app.use('/api', (req, res, next) => {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Missing token' });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
-  }
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Invalid token' });
+  req.userId = decoded.userId;
+  next();
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,24 +37,20 @@ if (!db.data) db.data = { users: [], logs: [], weights: [] };
 app.post('/api/register',
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
+  body('name').notEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-  const user = req.body;
-  await db.read();
-  if (db.data.users.find(u => u.email === user.email)) {
-    return res.status(400).json({ error: 'Email already registered' });
-  }
-  const hashed = await bcrypt.hash(user.password, 10);
-  const newUser = { ...user, password: hashed, id: uuid() };
-  db.data.users.push(newUser);
-  await db.write();
-  const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
-  const { password, ...safe } = newUser;
-  res.json({ user: safe, token });
-});
+    try {
+      const result = await registerUser(db, req.body);
+      res.json(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Registration failed';
+      res.status(400).json({ error: msg });
+    }
+  });
 
 app.post('/api/login',
   body('email').isEmail(),
@@ -71,29 +60,14 @@ app.post('/api/login',
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-  const { email, password } = req.body;
-  await db.read();
-  const user = db.data.users.find(u => u.email === email);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
-  let passwordValid = false;
-  if (user.password.startsWith('$2')) {
-    passwordValid = await bcrypt.compare(password, user.password);
-  } else {
-    // Support legacy accounts with plain text passwords
-    if (password === user.password) {
-      const hashed = await bcrypt.hash(password, 10);
-      user.password = hashed;
-      await db.write();
-      passwordValid = true;
+    try {
+      const result = await loginUser(db, req.body.email, req.body.password);
+      res.json(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid credentials';
+      res.status(401).json({ error: msg });
     }
-  }
-
-  if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-  const { password: pw, ...safe } = user;
-  res.json({ user: safe, token });
-});
+  });
 
 app.get('/api/profile/:id', async (req, res) => {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
