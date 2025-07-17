@@ -136,7 +136,7 @@ function App() {
     if (user.id && (currentView === 'auth' || currentView === 'splash')) {
       setCurrentView('dashboard');
     }
-  }, [user.id]);
+  }, [user.id, currentView]);
 
   // Splash screen then determine if we should show auth or dashboard
   useEffect(() => {
