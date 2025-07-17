@@ -4,6 +4,17 @@ import { verifyToken } from './authService.js';
 export default function createDeviceSyncRouter(db) {
   const router = express.Router();
 
+  async function fetchSteps() {
+    // Fonction simulant la récupération depuis Google Fit / Apple Health
+    // Dans un vrai scénario, cette fonction pourrait échouer si
+    // l'utilisateur refuse la permission ou si l'API tierce ne répond pas.
+    if (Math.random() < 0.05) {
+      // 5 % de chance d'échec pour simuler une erreur réseau ou permission refusée
+      throw new Error('Failed to retrieve steps');
+    }
+    return Math.round(Math.random() * 3000) + 3000;
+  }
+
   router.post('/:userId', async (req, res) => {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -14,8 +25,15 @@ export default function createDeviceSyncRouter(db) {
     const { date } = req.body || {};
     if (!date) return res.status(400).json({ error: 'Missing date' });
 
-    // Simuler la récupération depuis Google Fit / Apple Health
-    const steps = Math.round(Math.random() * 3000) + 3000;
+    let steps = 0;
+    try {
+      const result = await fetchSteps();
+      if (typeof result === 'number' && !Number.isNaN(result) && result > 0) {
+        steps = result;
+      }
+    } catch (err) {
+      console.error('deviceSync fetchSteps error:', err);
+    }
 
     const current = (await db.getLogs(req.params.userId, date)) || {
       entries: [],
@@ -28,7 +46,11 @@ export default function createDeviceSyncRouter(db) {
       targetCalories: 0
     };
     current.steps = steps;
-    await db.upsertLog(req.params.userId, date, current);
+    try {
+      await db.upsertLog(req.params.userId, date, current);
+    } catch (err) {
+      console.error('deviceSync database error:', err);
+    }
     res.json({ steps });
   });
 
