@@ -7,8 +7,13 @@ import path from 'path';
 export async function createDb() {
   if (process.env.MONGODB_URI) {
     const uri = process.env.MONGODB_URI;
+    const dbName = process.env.MONGODB_DBNAME || 'nutritalk';
     await mongoose
-      .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+      .connect(uri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        dbName
+      })
       .then(() => console.log('MongoDB connected'))
       .catch(err => console.error('Connection error:', err));
     const database = mongoose.connection.db;

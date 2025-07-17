@@ -38,9 +38,11 @@ SPOONACULAR_KEY=
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
 MONGODB_URI=
+MONGODB_DBNAME=nutritalk
 ```
 Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
 `MONGODB_URI` permet de stocker toutes les données dans un cluster MongoDB au lieu du fichier `db.json`.
+`MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 
 
