@@ -13,22 +13,26 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       if (isSignup) {
         const { user: newUser, token } = await register({ name, email, password });
+        if (!newUser) throw new Error('Invalid response');
         setAuthToken(token, rememberMe);
         onLogin(newUser, rememberMe);
       } else {
         const { user: loggedUser, token } = await login(email, password);
+        if (!loggedUser) throw new Error('Invalid response');
         setAuthToken(token, rememberMe);
         onLogin(loggedUser, rememberMe);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-      alert(msg);
+      const msg = err instanceof Error ? err.message : 'Identifiants incorrects';
+      setError(msg);
     }
   };
 
@@ -90,6 +94,11 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         >
           {isSignup ? 'Créer le compte' : 'Se connecter'}
         </button>
+        {error && (
+          <p className="text-red-400 text-sm text-center" role="alert">
+            {error}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setIsSignup(!isSignup)}

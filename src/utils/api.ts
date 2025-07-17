@@ -61,7 +61,8 @@ export async function login(email: string, password: string) {
   });
   if (!res.ok) {
     console.error('Login failed', res.status, res.statusText);
-    throw new Error('Invalid credentials');
+    const err = (await safeJson<{ error?: string }>(res)) || {};
+    throw new Error(err.error || 'Invalid credentials');
   }
   const data = await safeJson<{ user: User; token: string }>(res);
   if (!data) {
