@@ -20,20 +20,22 @@ test('regex fallback parses text', async () => {
 test('llm parser is used when API key is set', async () => {
   process.env.VITE_OPENAI_API_KEY = 'test';
   let called = false;
-  global.fetch = async (): Promise<Pick<Response, 'ok' | 'json'>> => {
+  global.fetch = async () => {
     called = true;
+    const payload = {
+      choices: [
+        {
+          message: {
+            content: '[{"name":"Kiwi","quantity":1,"unit":"unite"}]'
+          }
+        }
+      ]
+    };
     return {
       ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: '[{"name":"Kiwi","quantity":1,"unit":"unite"}]'
-            }
-          }
-        ]
-      })
-    };
+      text: async () => JSON.stringify(payload),
+      json: async () => payload
+    } as unknown as Response;
   };
   const foods = await parseFoods('un kiwi');
   assert(called);

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { login, register, setAuthToken } from '../utils/api';
+import { login, register, setAuthToken, API_BASE } from '../utils/api';
 
 interface LoginProps {
   user: User;
@@ -15,23 +15,33 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    console.debug('API base url', API_BASE);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       if (isSignup) {
         const { user: newUser, token } = await register({ name, email, password });
-        if (!newUser) throw new Error('Invalid response');
+        if (!newUser) throw new Error('Invalid response from server');
         setAuthToken(token, rememberMe);
         onLogin(newUser, rememberMe);
       } else {
         const { user: loggedUser, token } = await login(email, password);
-        if (!loggedUser) throw new Error('Invalid response');
+        if (!loggedUser) throw new Error('Invalid response from server');
+        console.debug('Logged in user', loggedUser);
         setAuthToken(token, rememberMe);
         onLogin(loggedUser, rememberMe);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Identifiants incorrects';
+      let msg = 'Identifiants incorrects';
+      if (err instanceof TypeError) {
+        msg = 'Erreur réseau ou serveur injoignable';
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
     }
   };

@@ -12,6 +12,8 @@ const API =
     ? 'https://nutritalk-2-0.onrender.com/api'
     : 'http://localhost:3001/api';
 
+export const API_BASE = API;
+
 let authToken: string | null =
   localStorage.getItem('token') || sessionStorage.getItem('token');
 
@@ -51,6 +53,7 @@ function authHeaders(extra: Record<string, string> = {}) {
 }
 
 export async function login(email: string, password: string) {
+  console.debug('POST', `${API}/login`);
   const res = await fetch(`${API}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -64,15 +67,16 @@ export async function login(email: string, password: string) {
     const err = (await safeJson<{ error?: string }>(res)) || {};
     throw new Error(err.error || 'Invalid credentials');
   }
-  const data = await safeJson<{ user: User; token: string }>(res);
-  if (!data) {
-    console.error('Failed to parse login response');
+  const data = await safeJson<{ user?: User; token?: string }>(res);
+  if (!data || !data.user || !data.token) {
+    console.error('Invalid login payload', data);
     throw new Error('Invalid response from server');
   }
   return data as { user: User; token: string };
 }
 
 export async function register(user: { name: string; email: string; password: string }) {
+  console.debug('POST', `${API}/register`);
   const res = await fetch(`${API}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -86,9 +90,9 @@ export async function register(user: { name: string; email: string; password: st
     const err = (await safeJson<{ error?: string }>(res)) || {};
     throw new Error(err.error || 'Registration failed');
   }
-  const data = await safeJson<{ user: User; token: string }>(res);
-  if (!data) {
-    console.error('Failed to parse registration response');
+  const data = await safeJson<{ user?: User; token?: string }>(res);
+  if (!data || !data.user || !data.token) {
+    console.error('Invalid registration payload', data);
     throw new Error('Invalid response from server');
   }
   return data as { user: User; token: string };
