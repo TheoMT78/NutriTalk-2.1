@@ -15,8 +15,8 @@ app.use(express.json());
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 100 });
 app.use(limiter);
 
-app.use('/api', (req, res, next) => {
-  if (req.path === '/login' || req.path === '/register') return next();
+// middleware to protect authenticated routes
+const authMiddleware = (req, res, next) => {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Missing token' });
@@ -24,7 +24,7 @@ app.use('/api', (req, res, next) => {
   if (!decoded) return res.status(401).json({ error: 'Invalid token' });
   req.userId = decoded.userId;
   next();
-});
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,6 +64,9 @@ app.post('/api/login',
       res.status(401).json({ error: msg });
     }
   });
+
+// protect routes below
+app.use('/api', authMiddleware);
 
 app.get('/api/profile/:id', async (req, res) => {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
