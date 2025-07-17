@@ -288,7 +288,11 @@ function App() {
     });
   };
 
-  const handleLogin = (u: User, remember: boolean) => {
+  const handleLogin = (u: User | null | undefined, remember: boolean) => {
+    if (!u) {
+      console.error('handleLogin called without user');
+      return;
+    }
     rememberRef.current = remember;
     const merged = { ...defaultUser, ...u } as User;
     if (!u.dailyCalories) {

@@ -4,7 +4,7 @@ import { login, register, setAuthToken } from '../utils/api';
 
 interface LoginProps {
   user: User;
-  onLogin: (user: User, remember: boolean) => void;
+  onLogin: (user: User | null | undefined, remember: boolean) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
