@@ -40,6 +40,7 @@ GOOGLE_CSE_ID=
 MONGODB_URI=
 ```
 Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
+`MONGODB_URI` permet de stocker toutes les données dans un cluster MongoDB au lieu du fichier `db.json`.
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 
 

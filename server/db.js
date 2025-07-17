@@ -6,7 +6,8 @@ import path from 'path';
 
 export async function createDb() {
   if (process.env.MONGODB_URI) {
-    const client = new MongoClient(process.env.MONGODB_URI);
+    const uri = process.env.MONGODB_URI;
+    const client = new MongoClient(uri);
     await client.connect();
     const database = client.db();
     return {
