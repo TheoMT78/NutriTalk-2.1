@@ -36,9 +36,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const dailyCaloriesGoal = user?.dailyCalories ?? 0;
+
   const getGoalMessage = () => {
     const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
-    const totalGoal = user.dailyCalories + stepsCalories;
+    const totalGoal = dailyCaloriesGoal + stepsCalories;
     const caloriesRemaining = totalGoal - dailyLog.totalCalories;
     if (caloriesRemaining > 0) {
       return `Il vous reste ${caloriesRemaining.toFixed(0)} calories aujourd'hui`;
@@ -47,7 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
-  const totalGoal = user.dailyCalories + stepsCalories;
+  const totalGoal = dailyCaloriesGoal + stepsCalories;
   const caloriesRemaining = totalGoal - dailyLog.totalCalories;
   const extraCarbs = stepsCalories / 4;
   const totalCarbGoal = user.dailyCarbs + extraCarbs;
@@ -87,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <TrendingUp size={16} />
-            <span>{user.dailyCalories} kcal/jour</span>
+            <span>{dailyCaloriesGoal} kcal/jour</span>
           </div>
         </div>
       </div>
@@ -190,7 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <CalorieProgress
             consumed={dailyLog.totalCalories}
             burned={stepsCalories}
-            target={user.dailyCalories}
+            target={dailyCaloriesGoal}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           />
         </div>
