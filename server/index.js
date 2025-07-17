@@ -9,12 +9,16 @@ import bcrypt from 'bcryptjs';
 import https from 'https';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
+import { body, validationResult } from 'express-validator';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nutritalk-secret';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+const limiter = rateLimit({ windowMs: 60 * 1000, max: 100 });
+app.use(limiter);
 
 app.use('/api', (req, res, next) => {
   if (req.path === '/login' || req.path === '/register') return next();
@@ -32,12 +36,19 @@ app.use('/api', (req, res, next) => {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbFile = path.join(__dirname, 'db.json');
+const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
 const db = new Low(new JSONFile(dbFile), { users: [], logs: [], weights: [] });
 await db.read();
 if (!db.data) db.data = { users: [], logs: [], weights: [] };
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register',
+  body('email').isEmail(),
+  body('password').isLength({ min: 6 }),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
   const user = req.body;
   await db.read();
   if (db.data.users.find(u => u.email === user.email)) {
@@ -52,7 +63,14 @@ app.post('/api/register', async (req, res) => {
   res.json({ user: safe, token });
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login',
+  body('email').isEmail(),
+  body('password').notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
   const { email, password } = req.body;
   await db.read();
   const user = db.data.users.find(u => u.email === email);
@@ -105,7 +123,13 @@ app.get('/api/logs/:userId/:date', async (req, res) => {
   res.json(log ? log.data : null);
 });
 
-app.post('/api/logs/:userId/:date', async (req, res) => {
+app.post('/api/logs/:userId/:date',
+  body().isObject(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const { userId, date } = req.params;
@@ -123,7 +147,13 @@ app.get('/api/weights/:userId', async (req, res) => {
   res.json(weights ? weights.data : []);
 });
 
-app.post('/api/weights/:userId', async (req, res) => {
+app.post('/api/weights/:userId',
+  body().isArray(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const { userId } = req.params;
@@ -144,16 +174,20 @@ app.get('/api/sync/:userId', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-if (process.env.SSL_KEY && process.env.SSL_CERT) {
-  const options = {
-    key: fs.readFileSync(process.env.SSL_KEY),
-    cert: fs.readFileSync(process.env.SSL_CERT)
-  };
-  https.createServer(options, app).listen(PORT, () => {
-    console.log(`HTTPS server listening on ${PORT}`);
-  });
-} else {
-  app.listen(PORT, () => {
-    console.log(`Server listening on ${PORT}`);
-  });
+if (process.env.NODE_ENV !== 'test') {
+  if (process.env.SSL_KEY && process.env.SSL_CERT) {
+    const options = {
+      key: fs.readFileSync(process.env.SSL_KEY),
+      cert: fs.readFileSync(process.env.SSL_CERT)
+    };
+    https.createServer(options, app).listen(PORT, () => {
+      console.log(`HTTPS server listening on ${PORT}`);
+    });
+  } else {
+    app.listen(PORT, () => {
+      console.log(`Server listening on ${PORT}`);
+    });
+  }
 }
+
+export default app;

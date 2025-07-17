@@ -141,7 +141,7 @@ export async function parseFoods(text: string): Promise<ParsedFood[]> {
       name = alias;
     }
 
-    foods.push({ nom: capitalize(name), quantite: quantity, unite: unitNorm, marque, gout });
+    foods.push({ name: capitalize(name), quantity, unit: unitNorm, brand: marque, flavor: gout });
   });
 
   return foods;

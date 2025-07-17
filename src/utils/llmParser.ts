@@ -2,11 +2,11 @@ import { ParsedFood } from '../types';
 import { safeJson } from './safeJson';
 
 interface LLMFood {
-  nom: string;
-  quantite: number;
-  unite: string;
-  marque?: string;
-  gout?: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  brand?: string;
+  flavor?: string;
 }
 
 export async function parseWithLLM(text: string): Promise<ParsedFood[] | null> {
@@ -47,11 +47,11 @@ export async function parseWithLLM(text: string): Promise<ParsedFood[] | null> {
     const raw = JSON.parse(rawContent || 'null') as LLMFood[] | null;
     if (!raw) return null;
     return raw.map(f => ({
-      nom: f.nom,
-      quantite: Number(f.quantite),
-      unite: f.unite,
-      marque: f.marque,
-      gout: f.gout
+      name: f.name,
+      quantity: Number(f.quantity),
+      unit: f.unit,
+      brand: f.brand,
+      flavor: f.flavor
     }));
   } catch (e) {
     console.error('parseWithLLM error', e);

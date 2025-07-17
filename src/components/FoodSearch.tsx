@@ -30,9 +30,9 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
   const [customFoods, setCustomFoods] = useLocalStorage<FoodItem[]>('nutritalk-custom-foods', []);
   const [externalFoods, setExternalFoods] = useState<FoodItem[]>([]);
 
-  // Base de données d'aliments étendue
+  // Extended food database
   const [foods] = useState<FoodItem[]>([
-    // Féculents
+    // Starches
     { id: '1', name: 'Riz blanc cuit', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, category: 'Féculents', unit: '100g' },
     { id: '1b', name: 'Riz blanc cru', calories: 360, protein: 7, carbs: 80, fat: 0.6, category: 'Féculents', unit: '100g' },
     { id: '2', name: 'Pâtes cuites', calories: 131, protein: 5, carbs: 25, fat: 1.1, category: 'Féculents', unit: '100g' },
@@ -43,14 +43,14 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     { id: '5', name: 'Pain complet', calories: 247, protein: 13, carbs: 41, fat: 4.2, category: 'Féculents', unit: '100g' },
     { id: '29', name: 'Pois chiches cuits', calories: 164, protein: 8.9, carbs: 27, fat: 2.6, category: 'Légumineuses', unit: '100g' },
     
-    // Protéines
+    // Proteins
     { id: '6', name: 'Blanc de poulet', calories: 165, protein: 31, carbs: 0, fat: 3.6, category: 'Protéines', unit: '100g' },
     { id: '7', name: 'Saumon', calories: 208, protein: 22, carbs: 0, fat: 13, category: 'Protéines', unit: '100g' },
     { id: '8', name: 'Bœuf haché 5%', calories: 137, protein: 20, carbs: 0, fat: 5, category: 'Protéines', unit: '100g' },
     { id: '9', name: 'Œufs', calories: 155, protein: 13, carbs: 1.1, fat: 11, category: 'Protéines', unit: '100g' },
     { id: '10', name: 'Thon en conserve', calories: 128, protein: 28, carbs: 0, fat: 1, category: 'Protéines', unit: '100g' },
     
-    // Légumes
+    // Vegetables
     { id: '11', name: 'Brocolis', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, category: 'Légumes', unit: '100g' },
     { id: '12', name: 'Épinards', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, category: 'Légumes', unit: '100g' },
     { id: '13', name: 'Tomates', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, category: 'Légumes', unit: '100g' },
@@ -65,13 +65,13 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     { id: '20', name: 'Fraises', calories: 32, protein: 0.7, carbs: 8, fat: 0.3, fiber: 2, vitaminC: 59, category: 'Fruits', unit: '100g' },
     { id: '20b', name: 'Kiwi jaune', calories: 60, protein: 1.1, carbs: 15, fat: 0.5, fiber: 2, vitaminC: 140, category: 'Fruits', unit: '100g' },
     
-    // Produits laitiers
+    // Dairy products
     { id: '21', name: 'Yaourt nature 0%', calories: 56, protein: 10, carbs: 4, fat: 0.1, category: 'Produits laitiers', unit: '100g' },
     { id: '22', name: 'Fromage blanc 0%', calories: 47, protein: 8, carbs: 4, fat: 0.2, category: 'Produits laitiers', unit: '100g' },
     { id: '23', name: 'Lait écrémé', calories: 35, protein: 3.4, carbs: 5, fat: 0.1, category: 'Produits laitiers', unit: '100ml' },
     { id: '24', name: 'Mozzarella', calories: 280, protein: 22, carbs: 2.2, fat: 22, category: 'Produits laitiers', unit: '100g' },
     
-    // Snacks et autres
+    // Snacks and others
     { id: '25', name: 'Amandes', calories: 579, protein: 21, carbs: 22, fat: 50, category: 'Fruits secs', unit: '100g' },
     { id: '26', name: 'Noix', calories: 654, protein: 15, carbs: 14, fat: 65, category: 'Fruits secs', unit: '100g' },
     { id: '27', name: 'Huile d\'olive', calories: 884, protein: 0, carbs: 0, fat: 100, category: 'Matières grasses', unit: '100ml' },

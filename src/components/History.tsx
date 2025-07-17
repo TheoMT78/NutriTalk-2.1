@@ -18,7 +18,7 @@ const History: React.FC<HistoryProps> = ({ user, weightHistory }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
 
-  // Historique vide au premier lancement
+  // Empty history on first launch
 interface HistoryDay {
   date: string;
   calories: number;

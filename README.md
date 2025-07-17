@@ -25,9 +25,9 @@ npm run update-food-db
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
 En production, l'application pointe par défaut vers
-`https://nutritalk-2-0.onrender.com/api`. Créez un fichier `.env` à la racine si
-vous souhaitez cibler un autre serveur ou utiliser `localhost` en
-développement :
+`https://nutritalk-2-0.onrender.com/api`. Utilisez le fichier `.env.example`
+pour créer votre propre `.env` si vous souhaitez cibler un autre serveur ou
+utiliser `localhost` en développement :
 
 ```bash
 VITE_API_URL=http://localhost:3001/api
@@ -105,3 +105,5 @@ Définissez les variables suivantes dans `.env` :
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
 ```
+
+Ce projet est distribué sous licence MIT. Voir le fichier LICENSE pour plus d'informations.

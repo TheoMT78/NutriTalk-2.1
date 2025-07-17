@@ -83,9 +83,9 @@ export interface Recipe {
 }
 
 export interface ParsedFood {
-  nom: string;
-  quantite: number;
-  unite: string;
-  marque?: string;
-  gout?: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  brand?: string;
+  flavor?: string;
 }

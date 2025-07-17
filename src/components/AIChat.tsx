@@ -95,7 +95,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     const parsed = await parseFoods(description);
 
     for (const food of parsed) {
-      const baseName = normalize(food.nom);
+      const baseName = normalize(food.name);
       const fromKeywords = keywordFoods.find(k =>
         k.keywords.some(kw => baseName.includes(normalize(kw)))
       );
@@ -105,27 +105,27 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         if (closest) info = closest;
       }
       if (!info) {
-        const ext = await searchNutrition(`${food.nom} ${food.marque || ''}`.trim());
+        const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
         if (ext) {
           info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
         }
       }
       if (!info) continue;
       const baseAmount = parseFloat(info.unit) || 100;
-      let grams = food.quantite;
-      if (food.unite === "unite") {
+      let grams = food.quantity;
+      if (food.unit === "unite") {
         const w = unitWeights[normalize(baseName)] || baseAmount;
-        grams = food.quantite * w;
-      } else if (food.unite === "cas") {
-        grams = food.quantite * 15;
-      } else if (food.unite === "cac") {
-        grams = food.quantite * 5;
+        grams = food.quantity * w;
+      } else if (food.unit === "cas") {
+        grams = food.quantity * 15;
+      } else if (food.unit === "cac") {
+        grams = food.quantity * 5;
       }
       const mult = grams / baseAmount;
       suggestions.push({
         name: info.name,
-        quantity: food.quantite,
-        unit: food.unite,
+        quantity: food.quantity,
+        unit: food.unit,
         calories: info.calories * mult,
         protein: info.protein * mult,
         carbs: info.carbs * mult,
