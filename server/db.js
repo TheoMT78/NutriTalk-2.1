@@ -5,9 +5,10 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 export async function createDb() {
-  if (process.env.MONGODB_URI) {
-    const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI && process.env.MONGODB_URI.trim();
+  if (uri) {
     const dbName = process.env.MONGODB_DBNAME || 'nutritalk';
+    console.log('[db] connecting to MongoDB', { dbName });
 
     try {
       await mongoose.connect(uri, {
@@ -15,9 +16,9 @@ export async function createDb() {
         useUnifiedTopology: true,
         dbName
       });
-      console.log('MongoDB connected to', dbName);
+      console.log('[db] MongoDB connected to', dbName);
     } catch (err) {
-      console.error('Connection error:', err);
+      console.error('[db] MongoDB connection error', err);
       throw err;
     }
 
@@ -60,8 +61,15 @@ export async function createDb() {
         return User.findOne({ email }).lean();
       },
       async addUser(user) {
-        const doc = await User.create(user);
-        return doc;
+        console.log('[db] addUser', { email: user.email });
+        try {
+          const doc = await User.create(user);
+          console.log('[db] insert success', doc._id);
+          return doc;
+        } catch (err) {
+          console.error('[db] insert error', err);
+          throw err;
+        }
       },
       async updateUser(id, data) {
         await User.updateOne({ id }, { $set: data });
@@ -97,12 +105,14 @@ export async function createDb() {
     };
   }
 
+  console.warn('[db] MONGODB_URI not set, falling back to local JSON file');
+
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
   const low = new Low(new JSONFile(dbFile), { users: [], logs: [], weights: [] });
   await low.read();
-  console.log('Using local database file', dbFile);
+  console.log('[db] Using local database file', dbFile);
   if (!low.data) low.data = { users: [], logs: [], weights: [] };
 
   return {
@@ -113,6 +123,7 @@ export async function createDb() {
       return low.data.users.find(u => u.email === email);
     },
     async addUser(user) {
+      console.log('[db] addUser (local)', { email: user.email });
       low.data.users.push(user);
       await low.write();
     },
