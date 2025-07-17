@@ -4,6 +4,13 @@ import { User as UserIcon, Settings, Target, Activity, Palette } from 'lucide-re
 import NumberStepper from './NumberStepper';
 import { User as UserType } from '../types';
 
+// Utilitaire pour retirer le champ password
+function removePassword(obj) {
+  // On retire le champ password s'il existe (utile pour l'update du profil)
+  const { password, ...rest } = obj;
+  return rest;
+}
+
 interface ProfileProps {
   user: UserType;
   onUpdateUser: (user: UserType) => void;
@@ -17,54 +24,58 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
   const autoTargetsRef = useRef(computeDailyTargets(user));
 
   const handleSave = () => {
-    const auto = computeDailyTargets({
-      weight: formData.weight,
-      height: formData.height,
-      age: formData.age,
-      gender: formData.gender,
-      activityLevel: formData.activityLevel,
-      goal: formData.goal,
-    });
+  const auto = computeDailyTargets({
+    weight: formData.weight,
+    height: formData.height,
+    age: formData.age,
+    gender: formData.gender,
+    activityLevel: formData.activityLevel,
+    goal: formData.goal,
+  });
 
-    const updated = { ...formData } as UserType;
+  const updated = { ...formData } as UserType;
 
-    if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
-      updated.dailyCalories = auto.calories;
-    }
+  if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
+    updated.dailyCalories = auto.calories;
+  }
 
-    if (!locks.protein && !locks.carbs && !locks.fat) {
-      const macros = calculateMacroTargets(updated.dailyCalories);
-      updated.dailyProtein = macros.protein;
-      updated.dailyCarbs = macros.carbs;
-      updated.dailyFat = macros.fat;
-    } else if (locks.calories) {
-      let remaining = updated.dailyCalories;
-      if (locks.protein) remaining -= updated.dailyProtein * 4;
-      if (locks.carbs) remaining -= updated.dailyCarbs * 4;
-      if (locks.fat) remaining -= updated.dailyFat * 9;
-      const unlocked = [] as ('protein' | 'carbs' | 'fat')[];
-      if (!locks.protein) unlocked.push('protein');
-      if (!locks.carbs) unlocked.push('carbs');
-      if (!locks.fat) unlocked.push('fat');
-      if (unlocked.length === 1) {
-        const key = unlocked[0];
-        if (key === 'protein') updated.dailyProtein = Math.round(remaining / 4);
-        if (key === 'carbs') updated.dailyCarbs = Math.round(remaining / 4);
-        if (key === 'fat') updated.dailyFat = Math.round(remaining / 9);
-      } else {
-        const macros = calculateMacroTargets(updated.dailyCalories);
-        if (!locks.protein) updated.dailyProtein = macros.protein;
-        if (!locks.carbs) updated.dailyCarbs = macros.carbs;
-        if (!locks.fat) updated.dailyFat = macros.fat;
-      }
+  if (!locks.protein && !locks.carbs && !locks.fat) {
+    const macros = calculateMacroTargets(updated.dailyCalories);
+    updated.dailyProtein = macros.protein;
+    updated.dailyCarbs = macros.carbs;
+    updated.dailyFat = macros.fat;
+  } else if (locks.calories) {
+    let remaining = updated.dailyCalories;
+    if (locks.protein) remaining -= updated.dailyProtein * 4;
+    if (locks.carbs) remaining -= updated.dailyCarbs * 4;
+    if (locks.fat) remaining -= updated.dailyFat * 9;
+    const unlocked = [] as ('protein' | 'carbs' | 'fat')[];
+    if (!locks.protein) unlocked.push('protein');
+    if (!locks.carbs) unlocked.push('carbs');
+    if (!locks.fat) unlocked.push('fat');
+    if (unlocked.length === 1) {
+      const key = unlocked[0];
+      if (key === 'protein') updated.dailyProtein = Math.round(remaining / 4);
+      if (key === 'carbs') updated.dailyCarbs = Math.round(remaining / 4);
+      if (key === 'fat') updated.dailyFat = Math.round(remaining / 9);
     } else {
-      updated.dailyCalories = updated.dailyProtein * 4 + updated.dailyCarbs * 4 + updated.dailyFat * 9;
+      const macros = calculateMacroTargets(updated.dailyCalories);
+      if (!locks.protein) updated.dailyProtein = macros.protein;
+      if (!locks.carbs) updated.dailyCarbs = macros.carbs;
+      if (!locks.fat) updated.dailyFat = macros.fat;
     }
+  } else {
+    updated.dailyCalories = updated.dailyProtein * 4 + updated.dailyCarbs * 4 + updated.dailyFat * 9;
+  }
 
-    onUpdateUser(updated);
-    setFormData(updated);
-    setIsEditing(false);
-  };
+  // !!! Ajout clé : on retire le password avant d'envoyer l'update !!!
+  const safeUser = removePassword(updated);
+
+  onUpdateUser(safeUser);
+  setFormData(updated);
+  setIsEditing(false);
+};
+
 
   const handleCancel = () => {
     setFormData(user);
