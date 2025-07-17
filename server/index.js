@@ -76,7 +76,7 @@ app.post('/api/login',
     }
   });
 
-// --- ROUTES PROTEGÉES --- //
+// --- ROUTES PROTÉGÉES --- //
 
 const protectedRouter = express.Router();
 protectedRouter.use(authMiddleware);
@@ -89,13 +89,16 @@ protectedRouter.get('/profile/:id', async (req, res) => {
   res.json(safe);
 });
 
+// 🔥 PATCH DE SÉCURITÉ ICI : ignore tout update du password venant du front
 protectedRouter.put('/profile/:id', async (req, res) => {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   const user = await db.getUserById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  await db.updateUser(req.params.id, req.body);
+  // Ignore le champ password si présent dans le front !
+  const { password, ...safeBody } = req.body;
+  await db.updateUser(req.params.id, safeBody);
   const updated = await db.getUserById(req.params.id);
-  const { password, ...safe } = updated;
+  const { password: _pw, ...safe } = updated;
   res.json(safe);
 });
 
@@ -165,6 +168,8 @@ if (process.env.NODE_ENV !== 'test') {
       console.log(`Server listening on ${PORT}`);
     });
   }
+}
+
 }
 
 export default app;
