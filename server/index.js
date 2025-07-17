@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import { registerUser, loginUser, verifyToken } from './authService.js';
 import { createDb } from './db.js';
+import createDeviceSyncRouter from './deviceSync.js';
 
 const app = express();
 app.use(cors());
@@ -33,6 +34,10 @@ const authMiddleware = (req, res, next) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = await createDb();
+
+// Route de synchronisation des appareils
+const deviceSyncRouter = createDeviceSyncRouter(db);
+app.use('/api/device-sync', deviceSyncRouter);
 
 // --- ROUTES PUBLIQUES --- //
 

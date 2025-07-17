@@ -74,7 +74,7 @@ export async function login(email: string, password: string) {
   }
   let user: User | undefined;
   let token: string | undefined;
-  if ('user' in (raw as any)) {
+  if (Object.prototype.hasOwnProperty.call(raw as object, 'user')) {
     const d = raw as { user?: User; token?: string };
     user = d.user;
     token = d.token;

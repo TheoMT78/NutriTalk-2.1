@@ -6,6 +6,7 @@ import StepProgress, { CALORIES_PER_STEP } from './StepProgress';
 import WaterProgress from './WaterProgress';
 import CalorieProgress from './CalorieProgress';
 import WeightChart from './WeightChart';
+import { deviceSync } from '../utils/deviceSync';
 
 interface DashboardProps {
   user: User;
@@ -37,6 +38,17 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const dailyCaloriesGoal = user?.dailyCalories ?? 0;
+
+  React.useEffect(() => {
+    async function sync() {
+      if (!user.id) return;
+      const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
+      if (steps > dailyLog.steps) {
+        onUpdateSteps(steps - dailyLog.steps);
+      }
+    }
+    sync();
+  }, [user.id, dailyLog.date, dailyLog.steps, onUpdateSteps]);
 
   const getGoalMessage = () => {
     const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
