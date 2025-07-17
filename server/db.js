@@ -71,8 +71,11 @@ export async function createDb() {
           throw err;
         }
       },
+      // PATCH SÉCURITÉ : on ignore le password lors d’un update user
       async updateUser(id, data) {
-        await User.updateOne({ id }, { $set: data });
+        // NE JAMAIS mettre à jour le password ici !
+        const { password, ...safeData } = data;
+        await User.updateOne({ id }, { $set: safeData });
       },
       async getUserById(id) {
         return User.findOne({ id }).lean();
@@ -127,11 +130,13 @@ export async function createDb() {
       low.data.users.push(user);
       await low.write();
     },
+    // PATCH SÉCURITÉ aussi pour mode fichier JSON
     async updateUser(id, data) {
       await low.read();
       const idx = low.data.users.findIndex(u => u.id === id);
       if (idx !== -1) {
-        low.data.users[idx] = { ...low.data.users[idx], ...data };
+        const { password, ...safeData } = data;
+        low.data.users[idx] = { ...low.data.users[idx], ...safeData };
         await low.write();
       }
     },
