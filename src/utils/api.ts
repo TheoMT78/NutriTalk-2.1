@@ -67,12 +67,29 @@ export async function login(email: string, password: string) {
     const err = (await safeJson<{ error?: string }>(res)) || {};
     throw new Error(err.error || 'Invalid credentials');
   }
-  const data = await safeJson<{ user?: User; token?: string }>(res);
-  if (!data || !data.user || !data.token) {
-    console.error('Invalid login payload', data);
+  const raw = await safeJson(res);
+  if (!raw) {
+    console.error('Failed to parse login response');
     throw new Error('Invalid response from server');
   }
-  return data as { user: User; token: string };
+  let user: User | undefined;
+  let token: string | undefined;
+  if ('user' in (raw as any)) {
+    const d = raw as { user?: User; token?: string };
+    user = d.user;
+    token = d.token;
+  } else {
+    const d = raw as { token?: string } & Partial<User>;
+    user = {
+      ...d,
+    } as User;
+    token = d.token;
+  }
+  if (!user) {
+    console.error('Invalid login payload', raw);
+    throw new Error('Invalid response from server');
+  }
+  return { user, token };
 }
 
 export async function register(user: { name: string; email: string; password: string }) {
