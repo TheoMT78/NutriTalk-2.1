@@ -131,12 +131,12 @@ function App() {
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Ensure dashboard shows once the user is authenticated
+  // Navigate to dashboard only when logging in from the auth or splash screens
   useEffect(() => {
-    if (user.id && currentView !== 'dashboard') {
+    if (user.id && (currentView === 'auth' || currentView === 'splash')) {
       setCurrentView('dashboard');
     }
-  }, [user.id, currentView]);
+  }, [user.id]);
 
   // Splash screen then determine if we should show auth or dashboard
   useEffect(() => {
