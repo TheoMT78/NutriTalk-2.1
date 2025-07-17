@@ -8,50 +8,85 @@ export async function createDb() {
   if (process.env.MONGODB_URI) {
     const uri = process.env.MONGODB_URI;
     const dbName = process.env.MONGODB_DBNAME || 'nutritalk';
-    await mongoose
-      .connect(uri, {
+
+    try {
+      await mongoose.connect(uri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         dbName
-      })
-      .then(() => console.log('MongoDB connected'))
-      .catch(err => console.error('Connection error:', err));
-    const database = mongoose.connection.db;
+      });
+      console.log('MongoDB connected to', dbName);
+    } catch (err) {
+      console.error('Connection error:', err);
+      throw err;
+    }
+
+    const userSchema = new mongoose.Schema(
+      {
+        id: String,
+        name: String,
+        email: String,
+        password: String
+      },
+      { collection: 'users' }
+    );
+
+    const logSchema = new mongoose.Schema(
+      {
+        userId: String,
+        date: String,
+        data: Object
+      },
+      { collection: 'logs' }
+    );
+
+    const weightSchema = new mongoose.Schema(
+      {
+        userId: String,
+        data: Array
+      },
+      { collection: 'weights' }
+    );
+
+    const User = mongoose.models.User || mongoose.model('User', userSchema);
+    const Log = mongoose.models.Log || mongoose.model('Log', logSchema);
+    const Weight = mongoose.models.Weight || mongoose.model('Weight', weightSchema);
+
     return {
       type: 'mongo',
       client: mongoose.connection,
       async getUserByEmail(email) {
-        return database.collection('users').findOne({ email });
+        return User.findOne({ email }).lean();
       },
       async addUser(user) {
-        await database.collection('users').insertOne(user);
+        await User.create(user);
       },
       async updateUser(id, data) {
-        await database.collection('users').updateOne({ id }, { $set: data });
+        await User.updateOne({ id }, { $set: data });
       },
       async getUserById(id) {
-        return database.collection('users').findOne({ id });
+        return User.findOne({ id }).lean();
       },
       async getLogs(userId, date) {
         if (date) {
-          const entry = await database.collection('logs').findOne({ userId, date });
+          const entry = await Log.findOne({ userId, date }).lean();
           return entry ? entry.data : null;
         }
-        return database.collection('logs').find({ userId }).toArray();
+        return Log.find({ userId }).lean();
       },
       async upsertLog(userId, date, data) {
-        await database.collection('logs').updateOne(
+        await Log.updateOne(
           { userId, date },
           { $set: { data } },
           { upsert: true }
         );
       },
       async getWeights(userId) {
-        const w = await database.collection('weights').findOne({ userId });
+        const w = await Weight.findOne({ userId }).lean();
         return w ? w.data : [];
       },
       async upsertWeights(userId, data) {
-        await database.collection('weights').updateOne(
+        await Weight.updateOne(
           { userId },
           { $set: { data } },
           { upsert: true }
