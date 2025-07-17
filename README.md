@@ -37,6 +37,7 @@ EDAMAM_APP_KEY=
 SPOONACULAR_KEY=
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
+MONGODB_URI=
 ```
 Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.

@@ -5,29 +5,27 @@ import { v4 as uuid } from 'uuid';
 const JWT_SECRET = process.env.JWT_SECRET || 'nutritalk-secret';
 
 export async function registerUser(db, user) {
-  await db.read();
-  if (db.data.users.find(u => u.email === user.email)) {
+  if (await db.getUserByEmail(user.email)) {
     throw new Error('Email already registered');
   }
   const hashed = await bcrypt.hash(user.password, 10);
   const newUser = { id: uuid(), ...user, password: hashed };
-  db.data.users.push(newUser);
-  await db.write();
+  await db.addUser(newUser);
   const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
   const { password, ...safe } = newUser;
   return { user: safe, token };
 }
 
 export async function loginUser(db, email, password) {
-  await db.read();
-  const user = db.data.users.find(u => u.email === email);
+  const user = await db.getUserByEmail(email);
   if (!user) throw new Error('Invalid credentials');
   let valid = false;
-  if (user.password.startsWith('$2')) {
+  if (user.password && user.password.startsWith('$2')) {
     valid = await bcrypt.compare(password, user.password);
   } else if (password === user.password) {
-    user.password = await bcrypt.hash(password, 10);
-    await db.write();
+    const hashed = await bcrypt.hash(password, 10);
+    await db.updateUser(user.id, { password: hashed });
+    user.password = hashed;
     valid = true;
   }
   if (!valid) throw new Error('Invalid credentials');
