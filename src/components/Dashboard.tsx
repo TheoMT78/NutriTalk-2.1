@@ -40,14 +40,34 @@ const Dashboard: React.FC<DashboardProps> = ({
   const dailyCaloriesGoal = user?.dailyCalories ?? 0;
 
   React.useEffect(() => {
+     let cancelled = false;
     async function sync() {
       if (!user.id) return;
-      const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
-      if (steps > dailyLog.steps) {
-        onUpdateSteps(steps - dailyLog.steps);
+      try {
+        const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
+        if (cancelled) return;
+        if (
+          typeof steps !== 'number' ||
+          Number.isNaN(steps) ||
+          steps < 0 ||
+          steps > 100000
+        ) {
+          console.warn('Invalid step count from deviceSync:', steps);
+          alert('Échec de la synchronisation des pas');
+          return;
+        }
+        if (steps > dailyLog.steps) {
+          onUpdateSteps(steps - dailyLog.steps);
+        }
+      } catch (err) {
+        console.error('deviceSync failure', err);
+        if (!cancelled) alert('Échec de la synchronisation des pas');
       }
     }
     sync();
+        return () => {
+      cancelled = true;
+    };
   }, [user.id, dailyLog.date, dailyLog.steps, onUpdateSteps]);
 
   const getGoalMessage = () => {
