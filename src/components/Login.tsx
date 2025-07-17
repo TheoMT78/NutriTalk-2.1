@@ -10,6 +10,7 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -17,7 +18,7 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
     e.preventDefault();
     try {
       if (isSignup) {
-        const { user: newUser, token } = await register({ ...user, email, password });
+        const { user: newUser, token } = await register({ name, email, password });
         setAuthToken(token, rememberMe);
         onLogin(newUser, rememberMe);
       } else {
@@ -37,6 +38,17 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         <h2 className="text-xl font-bold text-center">
           {isSignup ? 'Créer un compte' : 'Connexion'}
         </h2>
+        {isSignup && (
+          <div>
+            <label className="block text-sm mb-1">Nom d'utilisateur</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input

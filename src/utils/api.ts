@@ -71,7 +71,7 @@ export async function login(email: string, password: string) {
   return data as { user: User; token: string };
 }
 
-export async function register(user: User) {
+export async function register(user: { name: string; email: string; password: string }) {
   const res = await fetch(`${API}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
