@@ -54,12 +54,14 @@ export async function createDb() {
 
     return {
       type: 'mongo',
+      dbName,
       client: mongoose.connection,
       async getUserByEmail(email) {
         return User.findOne({ email }).lean();
       },
       async addUser(user) {
-        await User.create(user);
+        const doc = await User.create(user);
+        return doc;
       },
       async updateUser(id, data) {
         await User.updateOne({ id }, { $set: data });
@@ -100,10 +102,12 @@ export async function createDb() {
   const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
   const low = new Low(new JSONFile(dbFile), { users: [], logs: [], weights: [] });
   await low.read();
+  console.log('Using local database file', dbFile);
   if (!low.data) low.data = { users: [], logs: [], weights: [] };
 
   return {
     type: 'lowdb',
+    dbFile,
     async getUserByEmail(email) {
       await low.read();
       return low.data.users.find(u => u.email === email);

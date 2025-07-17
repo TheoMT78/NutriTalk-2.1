@@ -10,7 +10,11 @@ export async function registerUser(db, user) {
   }
   const hashed = await bcrypt.hash(user.password, 10);
   const newUser = { id: uuid(), ...user, password: hashed };
-  await db.addUser(newUser);
+  const result = await db.addUser(newUser);
+  const location = db.type === 'mongo'
+    ? `MongoDB ${db.dbName}.users`
+    : `lowdb ${db.dbFile}`;
+  console.log('[registerUser] stored in', location, result ? `id=${result.id||result._id}` : '');
   const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
   const { password, ...safe } = newUser;
   return { user: safe, token };
