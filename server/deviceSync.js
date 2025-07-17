@@ -30,16 +30,6 @@ export default function createDeviceSyncRouter(db) {
     const { date } = req.body || {};
     if (!date) return res.status(400).json({ error: 'Missing date' });
 
-    let steps = 0;
-    try {
-      const result = await fetchSteps();
-      if (typeof result === 'number' && !Number.isNaN(result) && result > 0) {
-        steps = result;
-      }
-    } catch (err) {
-      console.error('deviceSync fetchSteps error:', err);
-    }
-
     const current = (await db.getLogs(req.params.userId, date)) || {
       entries: [],
       totalCalories: 0,
@@ -50,6 +40,21 @@ export default function createDeviceSyncRouter(db) {
       steps: 0,
       targetCalories: 0
     };
+
+    if (current.steps > 0) {
+      return res.json({ steps: current.steps });
+    }
+
+    let steps = 0;
+    try {
+      const result = await fetchSteps();
+      if (typeof result === 'number' && !Number.isNaN(result) && result > 0) {
+        steps = result;
+      }
+    } catch (err) {
+      console.error('deviceSync fetchSteps error:', err);
+    }
+
     const stepsToStore = steps > current.steps ? steps : current.steps;
     current.steps = stepsToStore;
     try {
