@@ -5,14 +5,19 @@ export default function createDeviceSyncRouter(db) {
   const router = express.Router();
 
   async function fetchSteps() {
-    // Fonction simulant la récupération depuis Google Fit / Apple Health
-    // Dans un vrai scénario, cette fonction pourrait échouer si
-    // l'utilisateur refuse la permission ou si l'API tierce ne répond pas.
-    if (Math.random() < 0.05) {
-      // 5 % de chance d'échec pour simuler une erreur réseau ou permission refusée
-      throw new Error('Failed to retrieve steps');
+    // Fonction simulant la récupération depuis Google Fit / Apple Health.
+    // Cette fonction peut échouer si l'utilisateur refuse les permissions
+    // ou si l'API tierce ne répond pas.
+    try {
+      if (Math.random() < 0.05) {
+        // 5 % de chance d'échec pour simuler une erreur réseau ou permission refusée
+        throw new Error('Failed to retrieve steps');
+      }
+      return Math.round(Math.random() * 3000) + 3000;
+    } catch (err) {
+      console.error('fetchSteps error:', err);
+      return 0;
     }
-    return Math.round(Math.random() * 3000) + 3000;
   }
 
   router.post('/:userId', async (req, res) => {
@@ -45,13 +50,14 @@ export default function createDeviceSyncRouter(db) {
       steps: 0,
       targetCalories: 0
     };
-    current.steps = steps;
+    const stepsToStore = steps > current.steps ? steps : current.steps;
+    current.steps = stepsToStore;
     try {
       await db.upsertLog(req.params.userId, date, current);
     } catch (err) {
       console.error('deviceSync database error:', err);
     }
-    res.json({ steps });
+    res.json({ steps: current.steps });
   });
 
   return router;
