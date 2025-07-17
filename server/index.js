@@ -66,10 +66,10 @@ app.post('/api/login',
   });
 
 // all routes below this point require authentication
-const api = express.Router();
-api.use(authMiddleware);
+const protectedRouter = express.Router();
+protectedRouter.use(authMiddleware);
 
-api.get('/profile/:id', async (req, res) => {
+protectedRouter.get('/profile/:id', async (req, res) => {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   const user = await db.getUserById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -77,7 +77,7 @@ api.get('/profile/:id', async (req, res) => {
   res.json(safe);
 });
 
-api.put('/profile/:id', async (req, res) => {
+protectedRouter.put('/profile/:id', async (req, res) => {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   const user = await db.getUserById(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -87,14 +87,14 @@ api.put('/profile/:id', async (req, res) => {
   res.json(safe);
 });
 
-api.get('/logs/:userId/:date', async (req, res) => {
+protectedRouter.get('/logs/:userId/:date', async (req, res) => {
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   const { userId, date } = req.params;
   const log = await db.getLogs(userId, date);
   res.json(log);
 });
 
-api.post('/logs/:userId/:date',
+protectedRouter.post('/logs/:userId/:date',
   body().isObject(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -107,13 +107,13 @@ api.post('/logs/:userId/:date',
   res.json({ success: true });
 });
 
-api.get('/weights/:userId', async (req, res) => {
+protectedRouter.get('/weights/:userId', async (req, res) => {
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   const weights = await db.getWeights(req.params.userId);
   res.json(weights);
 });
 
-api.post('/weights/:userId',
+protectedRouter.post('/weights/:userId',
   body().isArray(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -126,7 +126,7 @@ api.post('/weights/:userId',
   res.json({ success: true });
 });
 
-api.get('/sync/:userId', async (req, res) => {
+protectedRouter.get('/sync/:userId', async (req, res) => {
   if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   const user = await db.getUserById(req.params.userId);
   const logs = await db.getLogs(req.params.userId);
@@ -135,7 +135,7 @@ api.get('/sync/:userId', async (req, res) => {
 });
 
 // mount authenticated router after public routes
-app.use('/api', api);
+app.use('/api', protectedRouter);
 
 const PORT = process.env.PORT || 3001;
 if (process.env.NODE_ENV !== 'test') {
