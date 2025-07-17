@@ -1,18 +1,20 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
-import { MongoClient } from 'mongodb';
+import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
 export async function createDb() {
   if (process.env.MONGODB_URI) {
     const uri = process.env.MONGODB_URI;
-    const client = new MongoClient(uri);
-    await client.connect();
-    const database = client.db();
+    await mongoose
+      .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+      .then(() => console.log('MongoDB connected'))
+      .catch(err => console.error('Connection error:', err));
+    const database = mongoose.connection.db;
     return {
       type: 'mongo',
-      client,
+      client: mongoose.connection,
       async getUserByEmail(email) {
         return database.collection('users').findOne({ email });
       },
