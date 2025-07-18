@@ -39,13 +39,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const dailyCaloriesGoal = user?.dailyCalories ?? 0;
 
+  const syncRef = React.useRef<Record<string, boolean>>({});
+
   React.useEffect(() => {
     let cancelled = false;
-    let alreadySynced = false;
 
     async function sync() {
-      if (!user.id || alreadySynced) return;
-      alreadySynced = true; // éviter de rappeler deviceSync en boucle
+      if (!user.id || syncRef.current[dailyLog.date]) return;
+      syncRef.current[dailyLog.date] = true; // éviter de rappeler deviceSync en boucle
       try {
         const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
         if (cancelled) return;
@@ -58,8 +59,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           console.warn('Invalid step count from deviceSync:', steps);
           return;
         }
-        if (steps > dailyLog.steps) {
-          onUpdateSteps(steps - dailyLog.steps);
+        const diff = steps - dailyLog.steps;
+        if (diff > 0 && diff < 20000) {
+          onUpdateSteps(diff);
         }
       } catch (err) {
         console.error('deviceSync failure', err);

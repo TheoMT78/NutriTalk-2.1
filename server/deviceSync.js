@@ -38,23 +38,35 @@ export default function createDeviceSyncRouter(db) {
       totalFat: 0,
       water: 0,
       steps: 0,
-      targetCalories: 0
+      targetCalories: 0,
+      lastSyncAt: 0
     };
 
-    if (current.steps > 0) {
+    const now = Date.now();
+    if (current.steps > 0 && current.lastSyncAt && now - current.lastSyncAt < 24 * 60 * 60 * 1000) {
+      return res.json({ steps: current.steps });
+    }
+    if (current.lastSyncAt && now - current.lastSyncAt < 5 * 60 * 1000) {
+      // Evite les re-sync trop fréquentes en cas d'échec précédent
       return res.json({ steps: current.steps });
     }
 
     let steps = 0;
     try {
       const result = await fetchSteps();
-      if (typeof result === 'number' && !Number.isNaN(result) && result > 0) {
+      if (
+        typeof result === 'number' &&
+        !Number.isNaN(result) &&
+        result > 0 &&
+        result <= 100000
+      ) {
         steps = result;
       }
     } catch (err) {
       console.error('deviceSync fetchSteps error:', err);
     }
 
+    current.lastSyncAt = now;
     const stepsToStore = steps > current.steps ? steps : current.steps;
     current.steps = stepsToStore;
     try {
