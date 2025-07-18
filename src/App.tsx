@@ -452,6 +452,8 @@ function App() {
             <AIChat
               onClose={() => setIsAIChatOpen(false)}
               onAddFood={addFoodEntry}
+              onUpdateEntry={updateFoodEntry}
+              dailyLog={dailyLog}
               isDarkMode={isDarkMode}
             />
           )}

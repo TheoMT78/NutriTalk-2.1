@@ -6,7 +6,8 @@ import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
-import { Recipe, FoodItem } from '../types';
+import { detectModificationIntent } from '../utils/detectModification';
+import { Recipe, FoodItem, DailyLog, FoodEntry } from '../types';
 
 const normalize = (str: string) =>
   str
@@ -35,6 +36,8 @@ interface AIChatProps {
     category: string;
     meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation';
   }) => void;
+  onUpdateEntry: (entry: FoodEntry) => void;
+  dailyLog: DailyLog;
   onAddRecipe?: (recipe: Recipe) => void;
   isDarkMode: boolean;
 }
@@ -64,9 +67,19 @@ interface FoodSuggestion {
   category: string;
   meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation';
   confidence: number;
+  action?: 'edit';
+  entryId?: string;
+  oldQuantity?: number;
 }
 
-const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDarkMode }) => {
+const AIChat: React.FC<AIChatProps> = ({
+  onClose,
+  onAddFood,
+  onUpdateEntry,
+  dailyLog,
+  onAddRecipe,
+  isDarkMode,
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -188,6 +201,52 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     }, 10000);
 
     try {
+      const mod = await detectModificationIntent(input).catch(() => null);
+      if (mod) {
+        const target = dailyLog.entries.find(
+          e =>
+            e.meal === mod.meal &&
+            normalize(e.name) === normalize(mod.name)
+        );
+        clearTimeout(timeout);
+        if (target) {
+          const suggestion: FoodSuggestion = {
+            name: target.name,
+            quantity: mod.newQuantity,
+            unit: mod.unit || target.unit,
+            calories: target.calories,
+            protein: target.protein,
+            carbs: target.carbs,
+            fat: target.fat,
+            category: target.category,
+            meal: target.meal,
+            confidence: 1,
+            action: 'edit',
+            entryId: target.id,
+            oldQuantity: target.quantity,
+          };
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: '📝 Modification détectée :',
+            timestamp: new Date(),
+            suggestions: [suggestion],
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        } else {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              type: 'ai',
+              content: `Je n\u2019ai pas trouvé ${mod.name} pour ce ${mod.meal}.`,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+        setIsLoading(false);
+        return;
+      }
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -326,16 +385,28 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
   };
 
   const handleAddSuggestion = (suggestion: FoodSuggestion) => {
-    onAddFood(suggestion);
-    
-    const confirmMessage: Message = {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: `✅ **${suggestion.name}** a été ajouté à votre journal pour le ${suggestion.meal} !`,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, confirmMessage]);
+    if (suggestion.action === 'edit' && suggestion.entryId) {
+      const entry = dailyLog.entries.find(e => e.id === suggestion.entryId);
+      if (entry) {
+        onUpdateEntry({ ...entry, quantity: suggestion.quantity, unit: suggestion.unit });
+        const confirmMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `✅ ${entry.name} mis à jour à ${suggestion.quantity}${suggestion.unit.replace(/^100/, '')} pour le ${entry.meal}.`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, confirmMessage]);
+      }
+    } else {
+      onAddFood(suggestion);
+      const confirmMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `✅ **${suggestion.name}** a été ajouté à votre journal pour le ${suggestion.meal} !`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+    }
   };
 
   return (
@@ -410,15 +481,16 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
                           <div className="flex-1">
                             <div className="font-medium">{suggestion.name}</div>
                             <div className="text-sm opacity-70">
-                              {suggestion.quantity}
-                              {suggestion.unit.replace(/^100/, '')} • {(suggestion.calories ?? 0).toFixed(0)} kcal
+                              {suggestion.action === 'edit'
+                                ? `${suggestion.oldQuantity ?? ''}${suggestion.unit.replace(/^100/, '')} ➜ ${suggestion.quantity}${suggestion.unit.replace(/^100/, '')}`
+                                : `${suggestion.quantity}${suggestion.unit.replace(/^100/, '')} • ${(suggestion.calories ?? 0).toFixed(0)} kcal`}
                             </div>
                           </div>
                           <button
                             onClick={() => handleAddSuggestion(suggestion)}
                             className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm"
                           >
-                            Ajouter
+                            {suggestion.action === 'edit' ? 'Modifier' : 'Ajouter'}
                           </button>
                         </div>
                       </div>
