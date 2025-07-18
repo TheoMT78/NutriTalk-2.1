@@ -238,3 +238,25 @@ export async function syncAll(userId: string) {
   }
   return data;
 }
+
+export interface WebNutritionResult {
+  title: string;
+  link: string;
+  snippet: string;
+}
+
+export async function searchNutritionLinks(query: string): Promise<WebNutritionResult[]> {
+  const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
+  try {
+    const res = await fetch(`${base}/search-nutrition?q=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      console.error('search-nutrition request failed', res.status, res.statusText);
+      return [];
+    }
+    const data = await safeJson<WebNutritionResult[]>(res);
+    return data || [];
+  } catch (e) {
+    console.error('searchNutritionLinks error', e);
+    return [];
+  }
+}

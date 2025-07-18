@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
+import { searchNutritionLinks } from '../utils/api';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
@@ -306,7 +307,16 @@ const AIChat: React.FC<AIChatProps> = ({
 
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
-      aiResponse = "Aucun résultat fiable trouvé pour votre message.";
+      const web = await searchNutritionLinks(input);
+      if (web.length > 0) {
+        aiResponse = `🔎 Je n\u2019ai pas trouvé "${input}" dans la base principale. Voici ce que j\u2019ai trouvé sur Internet :`;
+        web.forEach((r, i) => {
+          aiResponse += `\n${i + 1}. [${r.title}](${r.link})`;
+        });
+        aiResponse += '\n\n💡 Clique sur un lien pour consulter et ajouter manuellement les macros.';
+      } else {
+        aiResponse = "Aucun résultat fiable trouvé pour votre message.";
+      }
     }
 
     const aiMessage: Message = {
