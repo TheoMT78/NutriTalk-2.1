@@ -1,6 +1,13 @@
 export async function getDeviceSteps(date: string): Promise<number> {
   try {
-    const nav: any = typeof navigator !== 'undefined' ? navigator : null;
+    const nav =
+      typeof navigator !== 'undefined'
+        ? (navigator as {
+            health?: {
+              getDailyStepCount?: (opts: { date: string }) => Promise<{ steps: number }>;
+            };
+          })
+        : null;
     if (nav?.health?.getDailyStepCount) {
       const res = await nav.health.getDailyStepCount({ date });
       if (res && typeof res.steps === 'number') {

@@ -5,9 +5,10 @@ import NumberStepper from './NumberStepper';
 import { User as UserType } from '../types';
 
 // Utilitaire pour retirer le champ password
-function removePassword(obj) {
+function removePassword(obj: Record<string, unknown>) {
   // On retire le champ password s'il existe (utile pour l'update du profil)
   const { password, ...rest } = obj;
+  void password;
   return rest;
 }
 

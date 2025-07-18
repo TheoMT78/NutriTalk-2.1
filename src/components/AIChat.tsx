@@ -70,6 +70,7 @@ interface FoodSuggestion {
   action?: 'edit';
   entryId?: string;
   oldQuantity?: number;
+  alternatives?: string[];
 }
 
 const AIChat: React.FC<AIChatProps> = ({
@@ -97,8 +98,11 @@ const AIChat: React.FC<AIChatProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const analyzeFood = async (description: string): Promise<FoodSuggestion[]> => {
+  const analyzeFood = async (
+    description: string
+  ): Promise<{ suggestions: FoodSuggestion[]; questions: string[] }> => {
     const suggestions: FoodSuggestion[] = [];
+    const questions: string[] = [];
     const lower = description.toLowerCase();
     let meal: "petit-déjeuner" | "déjeuner" | "dîner" | "collation" = "déjeuner";
     if (lower.includes("petit-déjeuner") || lower.includes("matin")) meal = "petit-déjeuner";
@@ -114,8 +118,13 @@ const AIChat: React.FC<AIChatProps> = ({
       );
       let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
       if (!info) {
-        const closest = findClosestFood(baseName, fullFoodBase);
-        if (closest) info = closest;
+        const cands = findClosestFoods(baseName, fullFoodBase, 2);
+        if (cands.length > 1 && cands[0].score - cands[1].score <= 1) {
+          questions.push(`Tu veux dire ${cands[0].food.name} ou ${cands[1].food.name} ?`);
+          continue;
+        }
+        const closest = cands[0]?.food || findClosestFood(baseName, fullFoodBase);
+        if (closest) info = closest as FoodItem;
       }
       if (!info) {
         const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
@@ -153,7 +162,7 @@ const AIChat: React.FC<AIChatProps> = ({
         confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
       });
     }
-    return suggestions;
+    return { suggestions, questions };
   };
 
   const parseRecipe = (text: string): Recipe | null => {
@@ -250,16 +259,18 @@ const AIChat: React.FC<AIChatProps> = ({
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const suggestions = await analyzeFood(input).catch(e => {
+      const { suggestions, questions } = await analyzeFood(input).catch(e => {
         console.error('analyzeFood error', e);
-        return [] as FoodSuggestion[];
+        return { suggestions: [] as FoodSuggestion[], questions: [] as string[] };
       });
       const recipe = parseRecipe(input);
 
       if (timedOut) return;
     
     let aiResponse = '';
-    if (suggestions.length > 0) {
+    if (questions.length > 0) {
+      aiResponse = questions.join('\n');
+    } else if (suggestions.length > 0) {
       aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
 
       suggestions.forEach((suggestion, index) => {
@@ -485,13 +496,20 @@ const AIChat: React.FC<AIChatProps> = ({
                                 ? `${suggestion.oldQuantity ?? ''}${suggestion.unit.replace(/^100/, '')} ➜ ${suggestion.quantity}${suggestion.unit.replace(/^100/, '')}`
                                 : `${suggestion.quantity}${suggestion.unit.replace(/^100/, '')} • ${(suggestion.calories ?? 0).toFixed(0)} kcal`}
                             </div>
+                            {suggestion.alternatives && (
+                              <div className="mt-1">
+                                {`Tu veux dire ${suggestion.name} ou ${suggestion.alternatives[0]} ?`}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleAddSuggestion(suggestion)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm"
-                          >
-                            {suggestion.action === 'edit' ? 'Modifier' : 'Ajouter'}
-                          </button>
+                          {!suggestion.alternatives && (
+                            <button
+                              onClick={() => handleAddSuggestion(suggestion)}
+                              className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm"
+                            >
+                              {suggestion.action === 'edit' ? 'Modifier' : 'Ajouter'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

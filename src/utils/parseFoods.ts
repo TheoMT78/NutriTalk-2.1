@@ -39,7 +39,15 @@ function normalizeUnit(u?: string): string {
   if (['ml', 'cl'].includes(unit)) return 'ml';
   if (/soupe/.test(unit) || ['cas', 'càs'].includes(unit)) return 'cas';
   if (/cafe/.test(unit) || ['cac', 'càc'].includes(unit)) return 'cac';
-  if (/piece/.test(unit) || /tranche/.test(unit) || /sachet/.test(unit) || /pot/.test(unit)) return 'unite';
+  if (
+    /piece/.test(unit) ||
+    /tranche/.test(unit) ||
+    /sachet/.test(unit) ||
+    /pot/.test(unit) ||
+    /bol/.test(unit) ||
+    /poign[eé]e/.test(unit)
+  )
+    return 'unite';
   return unit;
 }
 
