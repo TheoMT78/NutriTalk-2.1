@@ -5,12 +5,14 @@ interface StepProgressProps {
   current: number;
   target: number;
   onUpdate?: (delta: number) => void;
+  onSync?: () => void;
+  syncing?: boolean;
   className?: string;
 }
 
 export const CALORIES_PER_STEP = 0.04;
 
-const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, className = '' }) => {
+const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, onSync, syncing = false, className = '' }) => {
   const rawPercentage = (current / target) * 100;
   const percentage = Math.min(rawPercentage, 100);
   const extraSteps = Math.max(0, current - 4000);
@@ -85,6 +87,17 @@ const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, 
             className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
           >
             -1000
+          </button>
+        </div>
+      )}
+      {onSync && (
+        <div className="flex justify-center mt-2">
+          <button
+            onClick={onSync}
+            disabled={syncing}
+            className="px-3 py-1 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 disabled:opacity-50"
+          >
+            {syncing ? 'Synchronisation…' : 'Mettre à jour les pas'}
           </button>
         </div>
       )}

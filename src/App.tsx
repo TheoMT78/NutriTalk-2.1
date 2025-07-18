@@ -11,7 +11,7 @@ import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
-import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
+import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
 
 function App() {
@@ -180,22 +180,22 @@ function App() {
   useEffect(() => {
     if (user.id) {
       const today = new Date().toISOString().split('T')[0];
-      syncAll(user.id).then(data => {
-        if (data.profile) setUser(prev => ({ ...prev, ...data.profile }));
-        const log = data.logs?.find((l: { date: string; data: DailyLog }) => l.date === today);
-        if (log) setDailyLog(log.data);
-        if (data.weights) setWeightHistory(data.weights);
-      }).catch(() => {
-        getProfile(user.id).then(setUser).catch(() => {});
-        getDailyLog(user.id, today).then(log => {
-          if (log) setDailyLog(log);
-        }).catch(() => {});
-        getWeightHistory(user.id).then(hist => {
-          if (hist) setWeightHistory(hist);
-        }).catch(() => {});
-      });
+      syncAll(user.id)
+        .then(data => {
+          if (data.profile) setUser(prev => ({ ...prev, ...data.profile }));
+          const log = data.logs?.find((l: { date: string; data: DailyLog }) => l.date === today);
+          if (log) setDailyLog(log.data);
+        })
+        .catch(() => {
+          getProfile(user.id).then(setUser).catch(() => {});
+          getDailyLog(user.id, today)
+            .then(log => {
+              if (log) setDailyLog(log);
+            })
+            .catch(() => {});
+        });
     }
-  }, [user.id, setUser, setDailyLog, setWeightHistory]);
+  }, [user.id]);
 
   useEffect(() => {
     if (user.id) {
@@ -209,11 +209,7 @@ function App() {
     }
   }, [user, user.id]);
 
-  useEffect(() => {
-    if (user.id) {
-      saveWeightHistory(user.id, weightHistory).catch(() => {});
-    }
-  }, [weightHistory, user.id]);
+
 
 
   const addFoodEntry = (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {

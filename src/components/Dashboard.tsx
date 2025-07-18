@@ -40,36 +40,42 @@ const Dashboard: React.FC<DashboardProps> = ({
   const dailyCaloriesGoal = user?.dailyCalories ?? 0;
 
   const syncRef = React.useRef<Record<string, boolean>>({});
+  const [isSyncingSteps, setIsSyncingSteps] = React.useState(false);
 
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function sync() {
-      if (!user.id || syncRef.current[dailyLog.date]) return;
-      syncRef.current[dailyLog.date] = true; // éviter de rappeler deviceSync en boucle
-      try {
-        const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
-        if (cancelled) return;
-        if (
-          typeof steps !== 'number' ||
-          Number.isNaN(steps) ||
-          steps < 0 ||
-          steps > 100000
-        ) {
-          console.warn('Invalid step count from deviceSync:', steps);
-          return;
-        }
+  const syncSteps = React.useCallback(async () => {
+    if (!user.id || isSyncingSteps) return;
+    setIsSyncingSteps(true);
+    try {
+      const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
+      if (
+        typeof steps === 'number' &&
+        !Number.isNaN(steps) &&
+        steps >= 0 &&
+        steps <= 100000
+      ) {
         const diff = steps - dailyLog.steps;
         if (diff > 0 && diff < 20000) {
           onUpdateSteps(diff);
         }
-      } catch (err) {
-        console.error('deviceSync failure', err);
+      } else {
+        console.warn('Invalid step count from deviceSync:', steps);
       }
+    } catch (err) {
+      console.error('deviceSync failure', err);
+    } finally {
+      setIsSyncingSteps(false);
+      syncRef.current[dailyLog.date] = true;
     }
+  }, [user.id, dailyLog.date, dailyLog.steps, isSyncingSteps, onUpdateSteps]);
 
-    sync();
-
+  React.useEffect(() => {
+    let cancelled = false;
+    if (syncRef.current[dailyLog.date]) return;
+    const run = async () => {
+      await syncSteps();
+      if (cancelled) setIsSyncingSteps(false);
+    };
+    run();
     return () => {
       cancelled = true;
     };
@@ -237,6 +243,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           current={dailyLog.steps}
           target={user.stepGoal}
           onUpdate={onUpdateSteps}
+          onSync={syncSteps}
+          syncing={isSyncingSteps}
           className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
         />
         <WaterProgress
