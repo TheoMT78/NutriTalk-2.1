@@ -11,7 +11,7 @@ import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
-import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll } from './utils/api';
+import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll, saveWeightHistory } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
 
 function App() {
@@ -257,17 +257,45 @@ function App() {
     const index = dailyLog.entries.findIndex(e => e.id === updated.id);
     if (index === -1) return;
     const old = dailyLog.entries[index];
+    const rounded: FoodEntry = {
+      ...updated,
+      quantity: Math.round(updated.quantity * 10) / 10,
+      calories: Math.round(updated.calories * 10) / 10,
+      protein: Math.round(updated.protein * 10) / 10,
+      carbs: Math.round(updated.carbs * 10) / 10,
+      fat: Math.round(updated.fat * 10) / 10,
+      fiber: updated.fiber ? Math.round(updated.fiber * 10) / 10 : updated.fiber,
+      vitaminC: updated.vitaminC
+        ? Math.round(updated.vitaminC * 10) / 10
+        : updated.vitaminC,
+    };
     const entries = [...dailyLog.entries];
-    entries[index] = { ...updated };
+    entries[index] = { ...rounded };
     const newLog = {
       ...dailyLog,
       entries,
-      totalCalories: dailyLog.totalCalories - old.calories + updated.calories,
-      totalProtein: dailyLog.totalProtein - old.protein + updated.protein,
-      totalCarbs: dailyLog.totalCarbs - old.carbs + updated.carbs,
-      totalFat: dailyLog.totalFat - old.fat + updated.fat,
-      totalFiber: (dailyLog.totalFiber || 0) - (old.fiber || 0) + (updated.fiber || 0),
-      totalVitaminC: (dailyLog.totalVitaminC || 0) - (old.vitaminC || 0) + (updated.vitaminC || 0),
+      totalCalories:
+        Math.round(
+          (dailyLog.totalCalories - old.calories + rounded.calories) * 10
+        ) / 10,
+      totalProtein:
+        Math.round(
+          (dailyLog.totalProtein - old.protein + rounded.protein) * 10
+        ) / 10,
+      totalCarbs:
+        Math.round((dailyLog.totalCarbs - old.carbs + rounded.carbs) * 10) / 10,
+      totalFat:
+        Math.round((dailyLog.totalFat - old.fat + rounded.fat) * 10) / 10,
+      totalFiber:
+        Math.round(
+          ((dailyLog.totalFiber || 0) - (old.fiber || 0) + (rounded.fiber || 0)) *
+            10
+        ) / 10,
+      totalVitaminC:
+        Math.round(
+          ((dailyLog.totalVitaminC || 0) - (old.vitaminC || 0) +
+            (rounded.vitaminC || 0)) * 10
+        ) / 10,
     } as DailyLog;
     setDailyLog(newLog);
     if (user.id) saveDailyLog(user.id, newLog.date, newLog).catch(() => {});
@@ -300,7 +328,9 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     setWeightHistory(prev => {
       const filtered = prev.filter(p => p.date !== today);
-      return [...filtered, { date: today, weight: newWeight }];
+      const newHistory = [...filtered, { date: today, weight: newWeight }];
+      if (user.id) saveWeightHistory(user.id, newHistory).catch(() => {});
+      return newHistory;
     });
   };
 

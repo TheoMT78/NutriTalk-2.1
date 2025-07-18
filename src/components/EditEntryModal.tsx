@@ -24,12 +24,23 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onSave, onClose 
     return () => { document.body.style.overflow = original; };
   }, []);
 
-  const handleChange = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [field]: parseFloat(e.target.value) || 0 }));
+  const handleChange = (field: keyof typeof form) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = parseFloat(e.target.value);
+    const rounded = Math.round((value || 0) * 10) / 10;
+    setForm(prev => ({ ...prev, [field]: rounded }));
   };
 
   const handleSave = () => {
-    onSave({ ...entry, ...form });
+    const rounded = {
+      quantity: Math.round(form.quantity * 10) / 10,
+      calories: Math.round(form.calories * 10) / 10,
+      protein: Math.round(form.protein * 10) / 10,
+      carbs: Math.round(form.carbs * 10) / 10,
+      fat: Math.round(form.fat * 10) / 10,
+    };
+    onSave({ ...entry, ...form, ...rounded });
   };
 
   const stop = (e: React.MouseEvent<HTMLDivElement>) => { e.stopPropagation(); };
