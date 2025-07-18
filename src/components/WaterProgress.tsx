@@ -1,5 +1,6 @@
 import React from 'react';
 import { Droplets } from 'lucide-react';
+import { safeNumber } from '../utils/safeNumber';
 
 interface WaterProgressProps {
   current: number;
@@ -9,7 +10,9 @@ interface WaterProgressProps {
 }
 
 const WaterProgress: React.FC<WaterProgressProps> = ({ current, target, onUpdate, className = '' }) => {
-  const percentageRaw = (current / target) * 100;
+  const safeCurrent = safeNumber(current);
+  const safeTarget = safeNumber(target);
+  const percentageRaw = safeTarget > 0 ? (safeCurrent / safeTarget) * 100 : 0;
   const percentage = Math.min(percentageRaw, 100);
   const reached = percentageRaw >= 100;
 
@@ -21,7 +24,7 @@ const WaterProgress: React.FC<WaterProgressProps> = ({ current, target, onUpdate
           Hydratation
         </h3>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {current} / {target} ml
+          {safeCurrent} / {safeTarget} ml
         </span>
       </div>
       <div className="relative w-32 h-32 mx-auto">
@@ -43,7 +46,7 @@ const WaterProgress: React.FC<WaterProgressProps> = ({ current, target, onUpdate
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-blue-500'}`}>{(percentageRaw ?? 0).toFixed(0)}%</div>
+          <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-blue-500'}`}>{percentageRaw.toFixed(0)}%</div>
         </div>
       </div>
       {onUpdate && (

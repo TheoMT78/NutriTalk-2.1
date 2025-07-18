@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart } from 'lucide-react';
+import { safeNumber } from '../utils/safeNumber';
 
 interface MacroChartProps {
   protein: number;
@@ -9,7 +10,10 @@ interface MacroChartProps {
 }
 
 const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className = '' }) => {
-  const total = protein + carbs + fat;
+  const safeProtein = safeNumber(protein);
+  const safeCarbs = safeNumber(carbs);
+  const safeFat = safeNumber(fat);
+  const total = safeProtein + safeCarbs + safeFat;
   
   if (total === 0) {
     return (
@@ -29,13 +33,13 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
     );
   }
 
-  const proteinPercentage = (protein / total) * 100;
-  const carbsPercentage = (carbs / total) * 100;
-  const fatPercentage = (fat / total) * 100;
+  const proteinPercentage = total ? (safeProtein / total) * 100 : 0;
+  const carbsPercentage = total ? (safeCarbs / total) * 100 : 0;
+  const fatPercentage = total ? (safeFat / total) * 100 : 0;
 
-  const proteinCalories = protein * 4;
-  const carbsCalories = carbs * 4;
-  const fatCalories = fat * 9;
+  const proteinCalories = safeProtein * 4;
+  const carbsCalories = safeCarbs * 4;
+  const fatCalories = safeFat * 9;
   const totalCalories = proteinCalories + carbsCalories + fatCalories;
 
   return (
@@ -46,7 +50,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
           Macronutriments
         </h3>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {(total ?? 0).toFixed(0)}g total
+          {total.toFixed(0)}g total
         </span>
       </div>
 
@@ -60,7 +64,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Protéines</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {(protein ?? 0).toFixed(0)}g ({(proteinPercentage ?? 0).toFixed(0)}%)
+              {safeProtein.toFixed(0)}g ({proteinPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -70,7 +74,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
             />
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {(proteinCalories ?? 0).toFixed(0)} kcal
+            {proteinCalories.toFixed(0)} kcal
           </div>
         </div>
 
@@ -82,7 +86,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Glucides</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {(carbs ?? 0).toFixed(0)}g ({(carbsPercentage ?? 0).toFixed(0)}%)
+              {safeCarbs.toFixed(0)}g ({carbsPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -92,7 +96,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
             />
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {(carbsCalories ?? 0).toFixed(0)} kcal
+            {carbsCalories.toFixed(0)} kcal
           </div>
         </div>
 
@@ -104,7 +108,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Lipides</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {(fat ?? 0).toFixed(0)}g ({(fatPercentage ?? 0).toFixed(0)}%)
+              {safeFat.toFixed(0)}g ({fatPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -114,7 +118,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
             />
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {(fatCalories ?? 0).toFixed(0)} kcal
+            {fatCalories.toFixed(0)} kcal
           </div>
         </div>
       </div>
@@ -126,7 +130,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
             Calories totales des macronutriments
           </div>
           <div className="text-xl font-bold text-green-600">
-            {(totalCalories ?? 0).toFixed(0)} kcal
+            {totalCalories.toFixed(0)} kcal
           </div>
         </div>
       </div>

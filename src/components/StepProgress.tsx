@@ -1,5 +1,6 @@
 import React from 'react';
 import { Footprints } from 'lucide-react';
+import { safeNumber } from '../utils/safeNumber';
 
 interface StepProgressProps {
   current: number;
@@ -13,9 +14,11 @@ interface StepProgressProps {
 export const CALORIES_PER_STEP = 0.04;
 
 const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, onSync, syncing = false, className = '' }) => {
-  const rawPercentage = (current / target) * 100;
+  const safeCurrent = safeNumber(current);
+  const safeTarget = safeNumber(target);
+  const rawPercentage = safeTarget > 0 ? (safeCurrent / safeTarget) * 100 : 0;
   const percentage = Math.min(rawPercentage, 100);
-  const extraSteps = Math.max(0, current - 4000);
+  const extraSteps = Math.max(0, safeCurrent - 4000);
   const caloriesBurned = extraSteps * CALORIES_PER_STEP;
   const reached = rawPercentage >= 100;
   return (
@@ -26,7 +29,7 @@ const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, 
           Pas
         </h3>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {current} / {target}
+          {safeCurrent} / {safeTarget}
         </span>
       </div>
       <div className="relative w-32 h-32 mx-auto">
@@ -49,12 +52,12 @@ const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, 
         </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-teal-500'}`}>
-          {(rawPercentage ?? 0).toFixed(0)}%
+          {rawPercentage.toFixed(0)}%
         </div>
       </div>
       </div>
       <div className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
-        {(caloriesBurned ?? 0).toFixed(0)} kcal brûlées
+        {caloriesBurned.toFixed(0)} kcal brûlées
       </div>
       {onUpdate && (
         <div className="flex justify-center flex-wrap gap-2 mt-2">

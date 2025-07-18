@@ -8,11 +8,16 @@ interface CalorieProgressProps {
   className?: string;
 }
 
+import { safeNumber } from '../utils/safeNumber';
+
 const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, target, className = '' }) => {
-  const totalTarget = target + burned;
-  const percentage = Math.min((consumed / totalTarget) * 100, 100);
-  const remaining = Math.max(totalTarget - consumed, 0);
-  const isOverTarget = consumed > totalTarget;
+  const safeConsumed = safeNumber(consumed);
+  const safeBurned = safeNumber(burned);
+  const safeTarget = safeNumber(target);
+  const totalTarget = safeTarget + safeBurned;
+  const percentage = totalTarget ? Math.min((safeConsumed / totalTarget) * 100, 100) : 0;
+  const remaining = Math.max(totalTarget - safeConsumed, 0);
+  const isOverTarget = safeConsumed > totalTarget;
 
   return (
     <div className={className}>
@@ -22,7 +27,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
           Progression Calories
         </h3>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {(consumed ?? 0).toFixed(0)} / {(totalTarget ?? 0).toFixed(0)} kcal
+          {safeConsumed.toFixed(0)} / {totalTarget.toFixed(0)} kcal
         </span>
       </div>
 
@@ -61,7 +66,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
               <div className={`text-2xl font-bold ${
                 isOverTarget ? 'text-red-500' : 'text-blue-500'
               }`}>
-                {(percentage ?? 0).toFixed(0)}%
+                {percentage.toFixed(0)}%
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {isOverTarget ? 'Dépassé' : 'Atteint'}
@@ -78,7 +83,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
                 Calories restantes
               </span>
               <span className="text-sm font-medium text-green-600">
-                {(remaining ?? 0).toFixed(0)} kcal
+                {remaining.toFixed(0)} kcal
               </span>
             </div>
           ) : (
@@ -87,7 +92,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
                 Calories en excès
               </span>
               <span className="text-sm font-medium text-red-600">
-                +{((consumed ?? 0) - (totalTarget ?? 0)).toFixed(0)} kcal
+                +{(safeConsumed - totalTarget).toFixed(0)} kcal
               </span>
             </div>
           )}
@@ -97,7 +102,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
               Consommées
             </span>
             <span className="text-sm font-medium">
-              {(consumed ?? 0).toFixed(0)} kcal
+              {safeConsumed.toFixed(0)} kcal
             </span>
           </div>
           
@@ -106,7 +111,7 @@ const CalorieProgress: React.FC<CalorieProgressProps> = ({ consumed, burned, tar
               Objectif
             </span>
             <span className="text-sm font-medium">
-              {(totalTarget ?? 0).toFixed(0)} kcal
+              {totalTarget.toFixed(0)} kcal
             </span>
           </div>
         </div>
