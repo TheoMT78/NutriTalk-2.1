@@ -9,6 +9,8 @@ process.env.NODE_ENV = 'test';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, 'test-db.json');
 process.env.DB_FILE = dbPath;
+process.env.GOOGLE_API_KEY = 'key';
+process.env.GOOGLE_CSE_ID = 'cx';
 
 const { default: app } = await import('../server/index.js');
 
@@ -49,6 +51,36 @@ test('create and fetch logs', async () => {
     .set('Authorization', `Bearer ${token}`)
     .expect(200);
   assert.deepEqual(res.body, log);
+});
+
+test('search nutrition returns results', async () => {
+  let called = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  global.fetch = async (_url: string) => {
+    called = true;
+    return {
+      ok: true,
+      async json() {
+        return {
+          items: [
+            { title: 'A', link: 'http://a', snippet: 'a' },
+            { title: 'B', link: 'http://b', snippet: 'b' },
+            { title: 'C', link: 'http://c', snippet: 'c' },
+            { title: 'D', link: 'http://d', snippet: 'd' }
+          ]
+        };
+      }
+    } as unknown as Response;
+  };
+  const res = await request(app)
+    .get('/search-nutrition?q=test')
+    .expect(200);
+  assert.equal(called, true);
+  assert.deepEqual(res.body, [
+    { title: 'A', link: 'http://a', snippet: 'a' },
+    { title: 'B', link: 'http://b', snippet: 'b' },
+    { title: 'C', link: 'http://c', snippet: 'c' }
+  ]);
 });
 test.after(() => {
   fs.unlinkSync(dbPath);

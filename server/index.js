@@ -76,6 +76,36 @@ app.post('/api/login',
     }
   });
 
+// Recherche nutritionnelle via Google Programmable Search
+app.get('/search-nutrition', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'Missing query' });
+  const key = process.env.GOOGLE_API_KEY;
+  const cx = process.env.GOOGLE_CSE_ID;
+  if (!key || !cx) {
+    return res.status(500).json({ error: 'Échec recherche Google' });
+  }
+  const url =
+    'https://www.googleapis.com/customsearch/v1?q=' +
+    encodeURIComponent(query) +
+    `&key=${key}&cx=${cx}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error('google search error', await resp.text());
+      return res.status(500).json({ error: 'Échec recherche Google' });
+    }
+    const data = await resp.json();
+    const results = (data.items || [])
+      .slice(0, 3)
+      .map(({ title, link, snippet }) => ({ title, link, snippet }));
+    res.json(results);
+  } catch (err) {
+    console.error('search-nutrition error', err);
+    res.status(500).json({ error: 'Échec recherche Google' });
+  }
+});
+
 // --- ROUTES PROTÉGÉES --- //
 
 const protectedRouter = express.Router();
