@@ -10,12 +10,12 @@ interface EditEntryModalProps {
 
 const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onSave, onClose }) => {
   const [form, setForm] = React.useState(() => ({
-    quantity: entry.quantity,
+    quantity: Math.round(entry.quantity * 10) / 10,
     unit: entry.unit,
-    calories: entry.calories,
-    protein: entry.protein,
-    carbs: entry.carbs,
-    fat: entry.fat,
+    calories: Math.round(entry.calories * 10) / 10,
+    protein: Math.round(entry.protein * 10) / 10,
+    carbs: Math.round(entry.carbs * 10) / 10,
+    fat: Math.round(entry.fat * 10) / 10,
   }));
 
   React.useEffect(() => {

@@ -213,21 +213,36 @@ function App() {
 
 
   const addFoodEntry = (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
+    const rounded = {
+      quantity: Math.round(entry.quantity * 10) / 10,
+      calories: Math.round(entry.calories * 10) / 10,
+      protein: Math.round(entry.protein * 10) / 10,
+      carbs: Math.round(entry.carbs * 10) / 10,
+      fat: Math.round(entry.fat * 10) / 10,
+      fiber: entry.fiber ? Math.round(entry.fiber * 10) / 10 : entry.fiber,
+      vitaminC: entry.vitaminC
+        ? Math.round(entry.vitaminC * 10) / 10
+        : entry.vitaminC,
+    };
+
     const newEntry: FoodEntry = {
       ...entry,
+      ...rounded,
       id: Date.now().toString(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const updatedLog = {
       ...dailyLog,
       entries: [...dailyLog.entries, newEntry],
-      totalCalories: dailyLog.totalCalories + entry.calories,
-      totalProtein: dailyLog.totalProtein + entry.protein,
-      totalCarbs: dailyLog.totalCarbs + entry.carbs,
-      totalFat: dailyLog.totalFat + entry.fat,
-      totalFiber: (dailyLog.totalFiber || 0) + (entry.fiber || 0),
-      totalVitaminC: (dailyLog.totalVitaminC || 0) + (entry.vitaminC || 0)
+      totalCalories: Math.round((dailyLog.totalCalories + rounded.calories) * 10) / 10,
+      totalProtein: Math.round((dailyLog.totalProtein + rounded.protein) * 10) / 10,
+      totalCarbs: Math.round((dailyLog.totalCarbs + rounded.carbs) * 10) / 10,
+      totalFat: Math.round((dailyLog.totalFat + rounded.fat) * 10) / 10,
+      totalFiber:
+        Math.round(((dailyLog.totalFiber || 0) + (rounded.fiber || 0)) * 10) / 10,
+      totalVitaminC:
+        Math.round(((dailyLog.totalVitaminC || 0) + (rounded.vitaminC || 0)) * 10) / 10,
     };
 
     setDailyLog(updatedLog);
