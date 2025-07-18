@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { computeDailyTargets, calculateMacroTargets } from '../utils/nutrition';
+import { computeDailyTargets, calculateMacroTargets, computeAge } from '../utils/nutrition';
 import { User as UserIcon, Settings, Target, Activity, Palette } from 'lucide-react';
 import NumberStepper from './NumberStepper';
 import { User as UserType } from '../types';
@@ -20,7 +20,10 @@ interface ProfileProps {
 
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(user);
+  const [formData, setFormData] = useState(() => ({
+    ...user,
+    age: user.age || computeAge(user.birthDate)
+  }));
   const [locks, setLocks] = useState({ calories: false, protein: false, carbs: false, fat: false });
   const autoTargetsRef = useRef(computeDailyTargets(user));
 
@@ -29,12 +32,18 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
     weight: formData.weight,
     height: formData.height,
     age: formData.age,
+    birthDate: formData.birthDate,
     gender: formData.gender,
     activityLevel: formData.activityLevel,
     goal: formData.goal,
   });
 
   const updated = { ...formData } as UserType;
+  updated.weightKg = updated.weight;
+  updated.heightCm = updated.height;
+  updated.sex = updated.gender as 'homme' | 'femme';
+  updated.birthDate = formData.birthDate;
+  updated.age = computeAge(formData.birthDate, formData.age);
 
   if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
     updated.dailyCalories = auto.calories;
@@ -79,7 +88,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
 
   const handleCancel = () => {
-    setFormData(user);
+    setFormData({ ...user, age: user.age || computeAge(user.birthDate) });
     setLocks({ calories: false, protein: false, carbs: false, fat: false });
     setIsEditing(false);
   };
@@ -90,6 +99,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       weight: formData.weight,
       height: formData.height,
       age: formData.age,
+      birthDate: formData.birthDate,
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
@@ -194,16 +204,22 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Âge</label>
+              <label className="block text-sm font-medium mb-2">Date de naissance</label>
               {isEditing ? (
                 <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) }))}
+                  type="date"
+                  value={formData.birthDate || ''}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      birthDate: e.target.value,
+                      age: computeAge(e.target.value)
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 />
               ) : (
-                <p className="text-gray-700 dark:text-gray-300">{user.age} ans</p>
+                <p className="text-gray-700 dark:text-gray-300">{user.birthDate || ''}</p>
               )}
             </div>
 

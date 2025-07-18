@@ -27,7 +27,13 @@ export async function createDb() {
         id: String,
         name: String,
         email: String,
-        password: String
+        password: String,
+        birthDate: String,
+        heightCm: Number,
+        weightKg: Number,
+        sex: String,
+        goal: String,
+        activityLevel: String
       },
       { collection: 'users' }
     );

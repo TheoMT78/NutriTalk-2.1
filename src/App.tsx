@@ -22,6 +22,10 @@ function App() {
     weight: 70,
     height: 175,
     gender: 'homme' as const,
+    birthDate: '',
+    weightKg: undefined,
+    heightCm: undefined,
+    sex: undefined,
     activityLevel: 'modérée' as const,
     goal: 'maintien' as const,
     avatar: 'https://images.pexels.com/photos/1310474/pexels-photo-1310474.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
@@ -357,6 +361,7 @@ function App() {
     }
     rememberRef.current = remember;
     const merged = { ...defaultUser, ...u } as User;
+    const needsProfile = !u.birthDate && !u.age;
     if (!u.dailyCalories) {
       const t = computeDailyTargets(merged);
       merged.dailyCalories = t.calories;
@@ -365,7 +370,7 @@ function App() {
       merged.dailyFat = t.fat;
     }
     setUser(merged);
-    setCurrentView('dashboard');
+    setCurrentView(needsProfile ? 'profile' : 'dashboard');
   };
 
   const handleLogout = () => {

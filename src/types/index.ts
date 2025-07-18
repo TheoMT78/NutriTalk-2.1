@@ -6,6 +6,10 @@ export interface User {
   weight: number;
   height: number;
   gender: 'homme' | 'femme';
+  birthDate?: string;
+  weightKg?: number;
+  heightCm?: number;
+  sex?: 'homme' | 'femme';
   activityLevel: 'sédentaire' | 'légère' | 'modérée' | 'élevée' | 'très élevée';
   goal: 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10';
   dailyCalories: number;
