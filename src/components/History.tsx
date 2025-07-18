@@ -147,7 +147,7 @@ interface HistoryDay {
           const month = last.slice(i, i + 30);
           const avg = month.reduce((s, x) => s + x.weight, 0) / month.length;
           const label = new Date(month[0].date).toLocaleDateString('fr-FR', { month: 'short' });
-          arr.push({ label, weight: parseFloat(avg.toFixed(1)) });
+          arr.push({ label, weight: parseFloat((avg ?? 0).toFixed(1)) });
         }
         return arr;
       }
@@ -161,7 +161,7 @@ interface HistoryDay {
             .toLocaleDateString('fr-FR', { month: 'short' })
             .charAt(0)
             .toUpperCase();
-          arr.push({ label, weight: parseFloat(avg.toFixed(1)) });
+          arr.push({ label, weight: parseFloat((avg ?? 0).toFixed(1)) });
         }
         return arr;
       }

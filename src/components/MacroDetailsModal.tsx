@@ -80,9 +80,9 @@ const MacroDetailsModal: React.FC<Props> = ({ user, log, onClose }) => {
               <React.Fragment key={item.key}>
                 <tr>
                   <td className="py-2">{item.key}</td>
-                  <td className="py-2 text-right">{item.total.toFixed(0)}{item.unit}</td>
-                  <td className="py-2 text-right">{item.goal.toFixed(0)}{item.unit}</td>
-                  <td className="py-2 text-right">{Math.max(item.goal - item.total, 0).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{(item.total ?? 0).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{(item.goal ?? 0).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{Math.max((item.goal ?? 0) - (item.total ?? 0), 0).toFixed(0)}{item.unit}</td>
                 </tr>
                 <tr>
                   <td colSpan={4} className="pb-2">

@@ -204,13 +204,13 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
 
       suggestions.forEach((suggestion, index) => {
-        const totalCalories = suggestion.calories.toFixed(0);
+        const totalCalories = (suggestion.calories ?? 0).toFixed(0);
         const displayUnit = suggestion.unit.replace(/^100/, '');
         aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
           `\n        - ${totalCalories} kcal` +
-          `\n        - Protéines: ${suggestion.protein.toFixed(1)}g` +
-          `\n        - Glucides: ${suggestion.carbs.toFixed(1)}g` +
-          `\n        - Lipides: ${suggestion.fat.toFixed(1)}g`;
+          `\n        - Protéines: ${(suggestion.protein ?? 0).toFixed(1)}g` +
+          `\n        - Glucides: ${(suggestion.carbs ?? 0).toFixed(1)}g` +
+          `\n        - Lipides: ${(suggestion.fat ?? 0).toFixed(1)}g`;
       });
 
       const totals = suggestions.reduce(
@@ -225,12 +225,12 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
       );
 
-      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides`;
+      aiResponse += `\n\n**Total**: ${(totals.calories ?? 0).toFixed(0)} kcal - ${(totals.protein ?? 0).toFixed(1)}g protéines, ${(totals.carbs ?? 0).toFixed(1)}g glucides, ${(totals.fat ?? 0).toFixed(1)}g lipides`;
       if (totals.fiber) {
-        aiResponse += `, ${totals.fiber.toFixed(1)}g fibres`;
+        aiResponse += `, ${(totals.fiber ?? 0).toFixed(1)}g fibres`;
       }
       if (totals.vitaminC) {
-        aiResponse += `, ${totals.vitaminC.toFixed(0)}mg vitamine C`;
+        aiResponse += `, ${(totals.vitaminC ?? 0).toFixed(0)}mg vitamine C`;
       }
       aiResponse += '.';
 
@@ -411,7 +411,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
                             <div className="font-medium">{suggestion.name}</div>
                             <div className="text-sm opacity-70">
                               {suggestion.quantity}
-                              {suggestion.unit.replace(/^100/, '')} • {suggestion.calories.toFixed(0)} kcal
+                              {suggestion.unit.replace(/^100/, '')} • {(suggestion.calories ?? 0).toFixed(0)} kcal
                             </div>
                           </div>
                           <button

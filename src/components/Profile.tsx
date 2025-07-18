@@ -116,7 +116,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
   const calculateBMI = () => {
     const heightInMeters = formData.height / 100;
-    return (formData.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    return ((formData.weight ?? 0) / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
   const calculateNeeds = () => {

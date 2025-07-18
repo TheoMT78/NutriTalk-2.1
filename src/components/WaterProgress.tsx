@@ -43,7 +43,7 @@ const WaterProgress: React.FC<WaterProgressProps> = ({ current, target, onUpdate
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-blue-500'}`}>{percentageRaw.toFixed(0)}%</div>
+          <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-blue-500'}`}>{(percentageRaw ?? 0).toFixed(0)}%</div>
         </div>
       </div>
       {onUpdate && (

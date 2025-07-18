@@ -80,9 +80,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     const totalGoal = dailyCaloriesGoal + stepsCalories;
     const caloriesRemaining = totalGoal - dailyLog.totalCalories;
     if (caloriesRemaining > 0) {
-      return `Il vous reste ${caloriesRemaining.toFixed(0)} calories aujourd'hui`;
+      return `Il vous reste ${(caloriesRemaining ?? 0).toFixed(0)} calories aujourd'hui`;
     }
-    return `Vous avez dépassé votre objectif de ${Math.abs(caloriesRemaining).toFixed(0)} calories`;
+    return `Vous avez dépassé votre objectif de ${Math.abs(caloriesRemaining ?? 0).toFixed(0)} calories`;
   };
 
   const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
@@ -138,9 +138,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Calories consommées</p>
               <p className="text-2xl font-bold text-blue-600">
-                {dailyLog.totalCalories.toFixed(0)}
+                {(dailyLog.totalCalories ?? 0).toFixed(0)}
               </p>
-              <p className="text-sm text-gray-500">reste {caloriesRemaining.toFixed(0)} / {totalGoal.toFixed(0)}</p>
+              <p className="text-sm text-gray-500">reste {(caloriesRemaining ?? 0).toFixed(0)} / {(totalGoal ?? 0).toFixed(0)}</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full"
@@ -159,7 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Protéines</p>
               <p className="text-2xl font-bold text-green-600">
-                {dailyLog.totalProtein.toFixed(0)}g
+                {(dailyLog.totalProtein ?? 0).toFixed(0)}g
               </p>
               <p className="text-sm text-gray-500">/ {user.dailyProtein}g</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -180,13 +180,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Glucides</p>
               <p className="text-2xl font-bold text-orange-600">
-                {dailyLog.totalCarbs.toFixed(0)}g
+                {(dailyLog.totalCarbs ?? 0).toFixed(0)}g
               </p>
               <p className="text-sm text-gray-500">
-                / {totalCarbGoal.toFixed(0)}g
+                / {(totalCarbGoal ?? 0).toFixed(0)}g
               </p>
               {extraCarbs > 0 && (
-                <p className="text-xs text-gray-500">+{extraCarbs.toFixed(0)}g après activité</p>
+                <p className="text-xs text-gray-500">+{(extraCarbs ?? 0).toFixed(0)}g après activité</p>
               )}
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
@@ -206,7 +206,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Lipides</p>
               <p className="text-2xl font-bold text-purple-600">
-                {Math.max(0, dailyLog.totalFat).toFixed(0)}g
+                {Math.max(0, dailyLog.totalFat ?? 0).toFixed(0)}g
               </p>
               <p className="text-sm text-gray-500">/ {user.dailyFat}g</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -247,7 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         />
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Poids</p>
-          <p className="text-2xl font-bold mb-2">{user.weight.toFixed(1)} kg</p>
+          <p className="text-2xl font-bold mb-2">{(user.weight ?? 0).toFixed(1)} kg</p>
           <div className="flex flex-wrap justify-center gap-2 mb-2">
             <button onClick={() => onUpdateWeight(-1)} className="px-2 py-1 border rounded">-1</button>
             <button onClick={() => onUpdateWeight(-0.5)} className="px-2 py-1 border rounded">-0.5</button>
@@ -289,7 +289,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <h4 className="font-medium capitalize">{meal}</h4>
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {mealCalories.toFixed(0)} kcal
+                    {(mealCalories ?? 0).toFixed(0)} kcal
                   </span>
                 </div>
                 
@@ -313,10 +313,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <span className="text-sm text-gray-500">{qty}</span>
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                              {entry.calories.toFixed(0)} kcal •
-                              P: {entry.protein.toFixed(0)}g •
-                              G: {entry.carbs.toFixed(0)}g •
-                              L: {entry.fat.toFixed(0)}g
+                              {(entry.calories ?? 0).toFixed(0)} kcal •
+                              P: {(entry.protein ?? 0).toFixed(0)}g •
+                              G: {(entry.carbs ?? 0).toFixed(0)}g •
+                              L: {(entry.fat ?? 0).toFixed(0)}g
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">

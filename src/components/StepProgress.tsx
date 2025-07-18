@@ -47,12 +47,12 @@ const StepProgress: React.FC<StepProgressProps> = ({ current, target, onUpdate, 
         </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <div className={`text-2xl font-bold ${reached ? 'text-red-500' : 'text-teal-500'}`}>
-          {rawPercentage.toFixed(0)}%
+          {(rawPercentage ?? 0).toFixed(0)}%
         </div>
       </div>
       </div>
       <div className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
-        {caloriesBurned.toFixed(0)} kcal brûlées
+        {(caloriesBurned ?? 0).toFixed(0)} kcal brûlées
       </div>
       {onUpdate && (
         <div className="flex justify-center flex-wrap gap-2 mt-2">
