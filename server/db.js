@@ -105,22 +105,19 @@ export async function createDb() {
           { upsert: true }
         );
       },
-      async updateMealItem(userId, mealMoment, foodName, newQuantity) {
+      async editFoodQuantity({ userId, foodId, newQuantity, newUnit }) {
         const today = new Date().toISOString().split('T')[0];
-        const logEntry = await Log.findOne({ userId, date: today }).lean();
-        if (!logEntry) return null;
-        const log = logEntry.data;
-        const idx = log.entries.findIndex(
-          e =>
-            e.meal === mealMoment &&
-            e.name.toLowerCase() === foodName.toLowerCase()
-        );
+        const doc = await Log.findOne({ userId, date: today }).lean();
+        if (!doc) return null;
+        const log = doc.data;
+        const idx = log.entries.findIndex(e => e.id === foodId);
         if (idx === -1) return null;
         const entry = log.entries[idx];
         const ratio = newQuantity / (entry.quantity || 1);
         const updated = {
           ...entry,
           quantity: newQuantity,
+          unit: newUnit || entry.unit,
           calories: Math.round(entry.calories * ratio * 10) / 10,
           protein: Math.round(entry.protein * ratio * 10) / 10,
           carbs: Math.round(entry.carbs * ratio * 10) / 10,
@@ -135,11 +132,7 @@ export async function createDb() {
           Math.round((log.totalCarbs - entry.carbs + updated.carbs) * 10) / 10;
         log.totalFat =
           Math.round((log.totalFat - entry.fat + updated.fat) * 10) / 10;
-        await Log.updateOne(
-          { userId, date: today },
-          { $set: { data: log } },
-          { upsert: true }
-        );
+        await Log.updateOne({ userId, date: today }, { $set: { data: log } }, { upsert: true });
         return updated;
       }
     };
@@ -208,21 +201,20 @@ export async function createDb() {
       if (idx === -1) low.data.weights.push(entry); else low.data.weights[idx] = entry;
       await low.write();
     },
-    async updateMealItem(userId, mealMoment, foodName, newQuantity) {
+    async editFoodQuantity({ userId, foodId, newQuantity, newUnit }) {
       await low.read();
       const today = new Date().toISOString().split('T')[0];
       const logIdx = low.data.logs.findIndex(l => l.userId === userId && l.date === today);
       if (logIdx === -1) return null;
       const log = low.data.logs[logIdx].data;
-      const idx = log.entries.findIndex(
-        e => e.meal === mealMoment && e.name.toLowerCase() === foodName.toLowerCase()
-      );
+      const idx = log.entries.findIndex(e => e.id === foodId);
       if (idx === -1) return null;
       const entry = log.entries[idx];
       const ratio = newQuantity / (entry.quantity || 1);
       const updated = {
         ...entry,
         quantity: newQuantity,
+        unit: newUnit || entry.unit,
         calories: Math.round(entry.calories * ratio * 10) / 10,
         protein: Math.round(entry.protein * ratio * 10) / 10,
         carbs: Math.round(entry.carbs * ratio * 10) / 10,

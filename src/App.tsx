@@ -272,17 +272,17 @@ function App() {
     const index = dailyLog.entries.findIndex(e => e.id === updated.id);
     if (index === -1) return;
     const old = dailyLog.entries[index];
+    const ratio = updated.quantity / (old.quantity || 1);
     const rounded: FoodEntry = {
-      ...updated,
+      ...old,
       quantity: Math.round(updated.quantity * 10) / 10,
-      calories: Math.round(updated.calories * 10) / 10,
-      protein: Math.round(updated.protein * 10) / 10,
-      carbs: Math.round(updated.carbs * 10) / 10,
-      fat: Math.round(updated.fat * 10) / 10,
-      fiber: updated.fiber ? Math.round(updated.fiber * 10) / 10 : updated.fiber,
-      vitaminC: updated.vitaminC
-        ? Math.round(updated.vitaminC * 10) / 10
-        : updated.vitaminC,
+      unit: updated.unit,
+      calories: Math.round(old.calories * ratio * 10) / 10,
+      protein: Math.round(old.protein * ratio * 10) / 10,
+      carbs: Math.round(old.carbs * ratio * 10) / 10,
+      fat: Math.round(old.fat * ratio * 10) / 10,
+      fiber: old.fiber ? Math.round((old.fiber * ratio) * 10) / 10 : old.fiber,
+      vitaminC: old.vitaminC ? Math.round((old.vitaminC * ratio) * 10) / 10 : old.vitaminC,
     };
     const entries = [...dailyLog.entries];
     entries[index] = { ...rounded };

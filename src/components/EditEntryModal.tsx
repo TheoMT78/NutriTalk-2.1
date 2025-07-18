@@ -12,10 +12,6 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onSave, onClose 
   const [form, setForm] = React.useState(() => ({
     quantity: Math.round(entry.quantity * 10) / 10,
     unit: entry.unit,
-    calories: Math.round(entry.calories * 10) / 10,
-    protein: Math.round(entry.protein * 10) / 10,
-    carbs: Math.round(entry.carbs * 10) / 10,
-    fat: Math.round(entry.fat * 10) / 10,
   }));
 
   React.useEffect(() => {
@@ -33,14 +29,8 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onSave, onClose 
   };
 
   const handleSave = () => {
-    const rounded = {
-      quantity: Math.round(form.quantity * 10) / 10,
-      calories: Math.round(form.calories * 10) / 10,
-      protein: Math.round(form.protein * 10) / 10,
-      carbs: Math.round(form.carbs * 10) / 10,
-      fat: Math.round(form.fat * 10) / 10,
-    };
-    onSave({ ...entry, ...form, ...rounded });
+    const roundedQty = Math.round(form.quantity * 10) / 10;
+    onSave({ ...entry, quantity: roundedQty, unit: form.unit });
   };
 
   const stop = (e: React.MouseEvent<HTMLDivElement>) => { e.stopPropagation(); };
@@ -76,42 +66,6 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ entry, onSave, onClose 
               type="text"
               value={form.unit}
               onChange={e => setForm(prev => ({ ...prev, unit: e.target.value }))}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
-            />
-          </label>
-          <label className="space-y-1">
-            <span>Calories</span>
-            <input
-              type="number"
-              value={form.calories}
-              onChange={handleChange('calories')}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
-            />
-          </label>
-          <label className="space-y-1">
-            <span>Protéines</span>
-            <input
-              type="number"
-              value={form.protein}
-              onChange={handleChange('protein')}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
-            />
-          </label>
-          <label className="space-y-1">
-            <span>Glucides</span>
-            <input
-              type="number"
-              value={form.carbs}
-              onChange={handleChange('carbs')}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
-            />
-          </label>
-          <label className="space-y-1">
-            <span>Lipides</span>
-            <input
-              type="number"
-              value={form.fat}
-              onChange={handleChange('fat')}
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
             />
           </label>
