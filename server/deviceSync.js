@@ -4,20 +4,18 @@ import { verifyToken } from './authService.js';
 export default function createDeviceSyncRouter(db) {
   const router = express.Router();
 
-  async function fetchSteps() {
-    // Fonction simulant la récupération depuis Google Fit / Apple Health.
-    // Cette fonction peut échouer si l'utilisateur refuse les permissions
-    // ou si l'API tierce ne répond pas.
-    try {
-      if (Math.random() < 0.05) {
-        // 5 % de chance d'échec pour simuler une erreur réseau ou permission refusée
-        throw new Error('Failed to retrieve steps');
-      }
-      return Math.round(Math.random() * 3000) + 3000;
-    } catch (err) {
-      console.error('fetchSteps error:', err);
-      return 0;
+  async function fetchSteps(provided) {
+    // Tentative d'intégration avec l'API Santé (Apple Health / Google Fit).
+    // En production, remplacer cette implémentation par un appel réel.
+    if (
+      typeof provided === 'number' &&
+      !Number.isNaN(provided) &&
+      provided > 0 &&
+      provided <= 100000
+    ) {
+      return provided;
     }
+    return 0;
   }
 
   router.post('/:userId', async (req, res) => {
@@ -27,7 +25,7 @@ export default function createDeviceSyncRouter(db) {
     if (!decoded || decoded.userId !== req.params.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    const { date } = req.body || {};
+    const { date, steps: provided } = req.body || {};
     if (!date) return res.status(400).json({ error: 'Missing date' });
 
     const current = (await db.getLogs(req.params.userId, date)) || {
@@ -53,7 +51,7 @@ export default function createDeviceSyncRouter(db) {
 
     let steps = 0;
     try {
-      const result = await fetchSteps();
+      const result = await fetchSteps(provided);
       if (
         typeof result === 'number' &&
         !Number.isNaN(result) &&
