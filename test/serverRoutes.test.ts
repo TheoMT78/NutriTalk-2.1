@@ -82,6 +82,47 @@ test('search nutrition returns results', async () => {
     { title: 'C', link: 'http://c', snippet: 'c' }
   ]);
 });
+
+test('deviceSync stores steps', async () => {
+  const register = await request(app)
+    .post('/api/register')
+    .send({ email: 'steps@example.com', password: 'secret', name: 'Steps' });
+  const token = register.body.token;
+  const userId = register.body.user.id;
+
+  let res = await request(app)
+    .post(`/api/device-sync/${userId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ date: '2025-01-01', steps: 1200 });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.steps, 1200);
+
+  // reset lastSyncAt to allow a new sync
+  let raw = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  const idx = raw.logs.findIndex(
+    (l: Record<string, unknown>) => l.userId === userId && l.date === '2025-01-01'
+  );
+  raw.logs[idx].data.lastSyncAt = 0;
+  fs.writeFileSync(dbPath, JSON.stringify(raw));
+
+  res = await request(app)
+    .post(`/api/device-sync/${userId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ date: '2025-01-01', steps: 800 });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.steps, 1200);
+
+  raw = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  raw.logs[idx].data.lastSyncAt = 0;
+  fs.writeFileSync(dbPath, JSON.stringify(raw));
+
+  res = await request(app)
+    .post(`/api/device-sync/${userId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ date: '2025-01-01', steps: 7000 });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.steps, 7000);
+});
 test.after(() => {
   fs.unlinkSync(dbPath);
 });

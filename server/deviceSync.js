@@ -15,6 +15,9 @@ export default function createDeviceSyncRouter(db) {
     ) {
       return provided;
     }
+    if (provided !== undefined) {
+      console.warn('[deviceSync] invalid steps from client:', provided);
+    }
     return 0;
   }
 
@@ -65,7 +68,14 @@ export default function createDeviceSyncRouter(db) {
     }
 
     current.lastSyncAt = now;
-    const stepsToStore = steps > current.steps ? steps : current.steps;
+    let stepsToStore = current.steps;
+    if (
+      typeof steps === 'number' &&
+      steps > 0 &&
+      (current.steps === 0 || Math.abs(steps - current.steps) > 1000 || steps > current.steps)
+    ) {
+      stepsToStore = steps;
+    }
     current.steps = stepsToStore;
     try {
       await db.upsertLog(req.params.userId, date, current);
