@@ -1,7 +1,8 @@
 import React from 'react';
 import { Target, TrendingUp, Droplets, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
-import { User, DailyLog } from '../types';
+import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
+import EditEntryModal from './EditEntryModal';
 import StepProgress, { CALORIES_PER_STEP } from './StepProgress';
 import WaterProgress from './WaterProgress';
 import CalorieProgress from './CalorieProgress';
@@ -15,6 +16,7 @@ interface DashboardProps {
   onUpdateWater: (amount: number) => void;
   onUpdateSteps: (amount: number) => void;
   onUpdateWeight: (delta: number) => void;
+  onUpdateEntry: (entry: FoodEntry) => void;
   weightHistory: { date: string; weight: number }[];
 }
 
@@ -25,6 +27,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onUpdateWater,
   onUpdateSteps,
   onUpdateWeight,
+  onUpdateEntry,
   weightHistory
 }) => {
   const getMealIcon = (meal: string) => {
@@ -98,6 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const totalCarbGoal = user.dailyCarbs + extraCarbs;
 
   const [showMacros, setShowMacros] = React.useState(false);
+  const [editing, setEditing] = React.useState<FoodEntry | null>(null);
 
   const groupedEntries = dailyLog.entries.reduce((acc, entry) => {
     if (!acc[entry.meal]) {
@@ -329,6 +333,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                           </div>
                           <div className="flex items-center space-x-2">
                             <button
+                              onClick={() => setEditing(entry)}
                               className="p-1 text-gray-500 hover:text-blue-500 transition-colors duration-200"
                               title="Modifier"
                             >
@@ -354,6 +359,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
       {showMacros && (
         <MacroDetailsModal user={user} log={dailyLog} onClose={() => setShowMacros(false)} />
+      )}
+      {editing && (
+        <EditEntryModal
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onSave={(e) => {
+            onUpdateEntry(e);
+            setEditing(null);
+          }}
+        />
       )}
     </div>
   );

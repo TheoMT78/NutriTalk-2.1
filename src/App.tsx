@@ -253,6 +253,26 @@ function App() {
     if (user.id) saveDailyLog(user.id, updatedLog.date, updatedLog).catch(() => {});
   };
 
+  const updateFoodEntry = (updated: FoodEntry) => {
+    const index = dailyLog.entries.findIndex(e => e.id === updated.id);
+    if (index === -1) return;
+    const old = dailyLog.entries[index];
+    const entries = [...dailyLog.entries];
+    entries[index] = { ...updated };
+    const newLog = {
+      ...dailyLog,
+      entries,
+      totalCalories: dailyLog.totalCalories - old.calories + updated.calories,
+      totalProtein: dailyLog.totalProtein - old.protein + updated.protein,
+      totalCarbs: dailyLog.totalCarbs - old.carbs + updated.carbs,
+      totalFat: dailyLog.totalFat - old.fat + updated.fat,
+      totalFiber: (dailyLog.totalFiber || 0) - (old.fiber || 0) + (updated.fiber || 0),
+      totalVitaminC: (dailyLog.totalVitaminC || 0) - (old.vitaminC || 0) + (updated.vitaminC || 0),
+    } as DailyLog;
+    setDailyLog(newLog);
+    if (user.id) saveDailyLog(user.id, newLog.date, newLog).catch(() => {});
+  };
+
   const updateWater = (amount: number) => {
     setDailyLog(prev => {
       const updated = { ...prev, water: Math.max(0, prev.water + amount) };
@@ -329,6 +349,7 @@ function App() {
             user={user}
             dailyLog={dailyLog}
             onRemoveEntry={removeFoodEntry}
+            onUpdateEntry={updateFoodEntry}
             onUpdateWater={updateWater}
             onUpdateSteps={updateSteps}
             onUpdateWeight={updateWeight}
@@ -349,6 +370,7 @@ function App() {
             user={user}
             dailyLog={dailyLog}
             onRemoveEntry={removeFoodEntry}
+            onUpdateEntry={updateFoodEntry}
             onUpdateWater={updateWater}
             onUpdateSteps={updateSteps}
             onUpdateWeight={updateWeight}
