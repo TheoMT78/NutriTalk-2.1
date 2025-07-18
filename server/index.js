@@ -68,7 +68,11 @@ app.post('/api/login',
       return res.status(400).json({ errors: errors.array() });
     }
     try {
-      const result = await loginUser(db, req.body.email, req.body.password);
+      const remember = !!req.body.rememberMe;
+      const result = await loginUser(db, req.body.email, req.body.password, remember);
+      const cookieOpts = { httpOnly: false, sameSite: 'lax' };
+      if (remember) cookieOpts.maxAge = 30 * 24 * 60 * 60 * 1000;
+      res.cookie('token', result.token, cookieOpts);
       res.json(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid credentials';

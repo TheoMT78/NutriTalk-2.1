@@ -29,7 +29,7 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         setAuthToken(token, rememberMe);
         onLogin(newUser, rememberMe);
       } else {
-        const { user: loggedUser, token } = await login(email, password);
+        const { user: loggedUser, token } = await login(email, password, rememberMe);
         if (!loggedUser) throw new Error('Invalid response from server');
         console.debug('Logged in user', loggedUser);
         if (token) setAuthToken(token, rememberMe);

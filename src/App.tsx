@@ -11,7 +11,7 @@ import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
-import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll, saveWeightHistory } from './utils/api';
+import { getAuthToken, clearAuthToken, isTokenValid, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll, saveWeightHistory } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
 
 function App() {
@@ -141,7 +141,7 @@ function App() {
   // Splash screen then determine if we should show auth or dashboard
   useEffect(() => {
     const token = getAuthToken();
-    if (!token) {
+    if (!isTokenValid(token)) {
       localStorage.removeItem('nutritalk-user');
       sessionStorage.removeItem('nutritalk-user');
       setUserState({
@@ -153,11 +153,12 @@ function App() {
         dailyWater: defaultUser.dailyWater,
       });
       rememberRef.current = false;
+      clearAuthToken();
     } else {
-      rememberRef.current = !!localStorage.getItem('token');
+      rememberRef.current = document.cookie.includes('token=');
     }
     const timer = setTimeout(() => {
-      setCurrentView(token ? 'dashboard' : 'auth');
+      setCurrentView(isTokenValid(token) ? 'dashboard' : 'auth');
     }, 1000);
     return () => clearTimeout(timer);
   }, []);

@@ -14,28 +14,39 @@ const API =
 
 export const API_BASE = API;
 
-let authToken: string | null =
-  localStorage.getItem('token') || sessionStorage.getItem('token');
+function readCookie(name: string): string | null {
+  return (
+    document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(name + '='))?.split('=')[1] || null
+  );
+}
+
+let authToken: string | null = readCookie('token');
 
 export function setAuthToken(token: string, remember: boolean) {
   authToken = token;
-  if (remember) {
-    localStorage.setItem('token', token);
-    sessionStorage.removeItem('token');
-  } else {
-    sessionStorage.setItem('token', token);
-    localStorage.removeItem('token');
-  }
+  document.cookie = `token=${token}; path=/; ${remember ? 'max-age=' + 30 * 24 * 60 * 60 : ''}`;
 }
 
 export function clearAuthToken() {
   authToken = null;
-  localStorage.removeItem('token');
-  sessionStorage.removeItem('token');
+  document.cookie = 'token=; path=/; max-age=0';
 }
 
 export function getAuthToken() {
+  if (!authToken) authToken = readCookie('token');
   return authToken;
+}
+
+export function isTokenValid(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return !payload.exp || Date.now() / 1000 < payload.exp;
+  } catch {
+    return false;
+  }
 }
 
 export function getUserIdFromToken(): string | null {
@@ -52,12 +63,12 @@ function authHeaders(extra: Record<string, string> = {}) {
   return authToken ? { ...extra, Authorization: `Bearer ${authToken}` } : extra;
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, remember = false) {
   console.debug('POST', `${API}/login`);
   const res = await fetch(`${API}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password, rememberMe: remember })
   }).catch(err => {
     console.error('Network error during login', err);
     throw err;

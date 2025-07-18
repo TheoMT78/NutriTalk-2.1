@@ -22,7 +22,7 @@ export async function registerUser(db, user) {
   return { user: safeUser, token };
 }
 
-export async function loginUser(db, email, password) {
+export async function loginUser(db, email, password, remember = false) {
   if (!email || !password) throw new Error('Missing fields');
   const user = await db.getUserByEmail(email);
   if (!user) throw new Error('Invalid credentials');
@@ -30,7 +30,8 @@ export async function loginUser(db, email, password) {
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new Error('Invalid credentials');
   // Création du JWT pour l'utilisateur
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+  const expiresIn = remember ? '30d' : '7d';
+  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn });
   const { password: _pw, ...safeUser } = user;
   return { user: safeUser, token };
 }
