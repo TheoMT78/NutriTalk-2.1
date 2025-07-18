@@ -149,6 +149,13 @@ export async function parseFoods(text: string): Promise<ParsedFood[]> {
       name = alias;
     }
 
+    name = name
+      .replace(/\s+(?:j[’']?en.*)/i, '')
+      .replace(/\s+par\b.*$/i, '')
+      .replace(/\s+qu['’]un.*$/i, '')
+      .replace(/\s+qu['’]une.*$/i, '')
+      .trim();
+
     foods.push({ name: capitalize(name), quantity, unit: unitNorm, brand: marque, flavor: gout });
   });
 
