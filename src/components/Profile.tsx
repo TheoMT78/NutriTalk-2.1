@@ -22,28 +22,35 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(() => ({
     ...user,
-    age: user.age || computeAge(user.birthDate)
+    age: user.age || computeAge(user.dateOfBirth)
   }));
   const [locks, setLocks] = useState({ calories: false, protein: false, carbs: false, fat: false });
-  const autoTargetsRef = useRef(computeDailyTargets(user));
+  const autoTargetsRef = useRef(
+    computeDailyTargets({
+      weight: user.weight,
+      height: user.height,
+      birthDate: user.dateOfBirth,
+      gender: user.gender,
+      activityLevel: user.activityLevel,
+      goal: user.goal,
+    })
+  );
 
   const handleSave = () => {
   const auto = computeDailyTargets({
     weight: formData.weight,
     height: formData.height,
     age: formData.age,
-    birthDate: formData.birthDate,
+    birthDate: formData.dateOfBirth,
     gender: formData.gender,
     activityLevel: formData.activityLevel,
     goal: formData.goal,
   });
 
   const updated = { ...formData } as UserType;
-  updated.weightKg = updated.weight;
-  updated.heightCm = updated.height;
-  updated.sex = updated.gender as 'homme' | 'femme';
-  updated.birthDate = formData.birthDate;
-  updated.age = computeAge(formData.birthDate, formData.age);
+  updated.gender = updated.gender as 'homme' | 'femme';
+  updated.dateOfBirth = formData.dateOfBirth;
+  updated.age = computeAge(formData.dateOfBirth, formData.age);
 
   if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
     updated.dailyCalories = auto.calories;
@@ -88,7 +95,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
 
   const handleCancel = () => {
-    setFormData({ ...user, age: user.age || computeAge(user.birthDate) });
+    setFormData({ ...user, age: user.age || computeAge(user.dateOfBirth) });
     setLocks({ calories: false, protein: false, carbs: false, fat: false });
     setIsEditing(false);
   };
@@ -99,7 +106,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       weight: formData.weight,
       height: formData.height,
       age: formData.age,
-      birthDate: formData.birthDate,
+      birthDate: formData.dateOfBirth,
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
@@ -208,18 +215,18 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
               {isEditing ? (
                 <input
                   type="date"
-                  value={formData.birthDate || ''}
+                  value={formData.dateOfBirth || ''}
                   onChange={(e) =>
                     setFormData(prev => ({
                       ...prev,
-                      birthDate: e.target.value,
+                      dateOfBirth: e.target.value,
                       age: computeAge(e.target.value)
                     }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 />
               ) : (
-                <p className="text-gray-700 dark:text-gray-300">{user.birthDate || ''}</p>
+                <p className="text-gray-700 dark:text-gray-300">{user.dateOfBirth || ''}</p>
               )}
             </div>
 

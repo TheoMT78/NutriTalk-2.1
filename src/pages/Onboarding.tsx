@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { savePersonalInfo } from '../utils/api';
+import { updateUserInfo } from '../utils/api';
 
 interface PersonalInfo {
   userId: string;
   name: string;
-  birthDate: string;
-  sex: string;
+  dateOfBirth: string;
+  gender: string;
   height: number;
   weight: number;
   activityLevel: string;
@@ -14,7 +14,7 @@ interface PersonalInfo {
 
 interface Props {
   userId: string;
-  onComplete: (info: PersonalInfo) => void;
+  onComplete: (info: Partial<PersonalInfo>) => void;
 }
 
 const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -71,20 +71,28 @@ export default function Onboarding({ userId, onComplete }: Props) {
 
   const handleSubmit = async () => {
     const monthIndex = months.indexOf(form.month) + 1;
-    const birthDate = `${form.year}-${String(monthIndex).padStart(2, '0')}-${String(form.day).padStart(2, '0')}`;
+    const dateOfBirth = `${form.year}-${String(monthIndex).padStart(2, '0')}-${String(form.day).padStart(2, '0')}`;
     const payload: PersonalInfo = {
       userId,
       name: form.name,
-      birthDate,
-      sex: form.sex,
+      dateOfBirth,
+      gender: form.sex,
       height: Number(form.height),
       weight: Number(form.weight),
       activityLevel: form.activityLevel,
       goal: form.goal,
     };
     try {
-      const saved = await savePersonalInfo(payload);
-      onComplete(saved || payload);
+      const saved = await updateUserInfo(userId, {
+        name: form.name,
+        dateOfBirth,
+        gender: form.sex,
+        height: Number(form.height),
+        weight: Number(form.weight),
+        activityLevel: form.activityLevel,
+        goal: form.goal,
+      });
+      onComplete((saved || payload) as Partial<PersonalInfo>);
     } catch (err) {
       console.error('Failed to save info', err);
       onComplete(payload);

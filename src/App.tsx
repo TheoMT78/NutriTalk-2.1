@@ -23,10 +23,7 @@ function App() {
     weight: 70,
     height: 175,
     gender: 'homme' as const,
-    birthDate: '',
-    weightKg: undefined,
-    heightCm: undefined,
-    sex: undefined,
+    dateOfBirth: '',
     activityLevel: 'modérée' as const,
     goal: 'maintien' as const,
     avatar: 'https://images.pexels.com/photos/1310474/pexels-photo-1310474.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
@@ -37,7 +34,14 @@ function App() {
     dailyWater: 2000
   };
 
-  const targets = computeDailyTargets(defaultUser);
+  const targets = computeDailyTargets({
+    weight: defaultUser.weight,
+    height: defaultUser.height,
+    birthDate: defaultUser.dateOfBirth,
+    gender: defaultUser.gender,
+    activityLevel: defaultUser.activityLevel,
+    goal: defaultUser.goal,
+  });
 
   const storedUserRaw =
     localStorage.getItem('nutritalk-user') ||
@@ -367,14 +371,21 @@ function App() {
     rememberRef.current = remember;
     const merged = { ...defaultUser, ...u } as User;
     const needsInfo =
-      !u.birthDate ||
-      !u.heightCm ||
-      !u.weightKg ||
+      !u.dateOfBirth ||
+      !u.height ||
+      !u.weight ||
       !u.activityLevel ||
       !u.goal ||
-      !u.sex;
+      !u.gender;
     if (!u.dailyCalories) {
-      const t = computeDailyTargets(merged);
+      const t = computeDailyTargets({
+        weight: merged.weight,
+        height: merged.height,
+        birthDate: merged.dateOfBirth,
+        gender: merged.gender,
+        activityLevel: merged.activityLevel,
+        goal: merged.goal,
+      });
       merged.dailyCalories = t.calories;
       merged.dailyProtein = t.protein;
       merged.dailyCarbs = t.carbs;
@@ -413,30 +424,23 @@ function App() {
         return (
           <Onboarding
             userId={user.id || ''}
-            onComplete={(info) => {
-              const withNumbers = {
-                ...user,
-                name: info.name,
-                birthDate: info.birthDate,
-                sex: info.sex,
-                height: info.height,
-                weight: info.weight,
-                activityLevel: info.activityLevel,
-                goal: info.goal,
-              } as User;
-              const targets = computeDailyTargets({
-                weight: info.weight,
-                height: info.height,
-                birthDate: info.birthDate,
-                gender: info.sex === 'homme' ? 'homme' : 'femme',
-                activityLevel: info.activityLevel,
-                goal: info.goal as 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10',
-              });
-              withNumbers.dailyCalories = targets.calories;
-              withNumbers.dailyProtein = targets.protein;
-              withNumbers.dailyCarbs = targets.carbs;
-              withNumbers.dailyFat = targets.fat;
-              setUser(withNumbers);
+            onComplete={(info: User) => {
+              const merged = { ...user, ...info } as User;
+              if (!merged.dailyCalories) {
+                const t = computeDailyTargets({
+                  weight: merged.weight,
+                  height: merged.height,
+                  birthDate: merged.dateOfBirth,
+                  gender: merged.gender as 'homme' | 'femme',
+                  activityLevel: merged.activityLevel,
+                  goal: merged.goal as 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10',
+                });
+                merged.dailyCalories = t.calories;
+                merged.dailyProtein = t.protein;
+                merged.dailyCarbs = t.carbs;
+                merged.dailyFat = t.fat;
+              }
+              setUser(merged);
               setCurrentView('dashboard');
             }}
           />

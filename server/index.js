@@ -137,6 +137,22 @@ protectedRouter.put('/profile/:id', async (req, res) => {
   res.json(safe);
 });
 
+// Mise à jour du profil utilisateur via /api/users/:id
+protectedRouter.patch('/users/:id', async (req, res) => {
+  if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { password, ...safeBody } = req.body;
+    await db.updateUser(req.params.id, safeBody);
+    const updated = await db.getUserById(req.params.id);
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    const { password: _pw, ...safe } = updated;
+    res.json(safe);
+  } catch (err) {
+    console.error('update user error', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 protectedRouter.post('/user/personal-info', async (req, res) => {
   const {
     userId,
@@ -160,10 +176,10 @@ protectedRouter.post('/user/personal-info', async (req, res) => {
     });
     await db.updateUser(userId, {
       name,
-      birthDate,
-      sex,
-      heightCm: height,
-      weightKg: weight,
+      dateOfBirth: birthDate,
+      gender: sex,
+      height,
+      weight,
       activityLevel,
       goal,
       dailyCalories: targets.calories,

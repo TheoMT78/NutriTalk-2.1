@@ -28,12 +28,16 @@ export async function createDb() {
         name: String,
         email: String,
         password: String,
-        birthDate: String,
-        heightCm: Number,
-        weightKg: Number,
-        sex: String,
+        dateOfBirth: String,
+        gender: String,
+        height: Number,
+        weight: Number,
+        activityLevel: String,
         goal: String,
-        activityLevel: String
+        dailyCalories: Number,
+        dailyProtein: Number,
+        dailyCarbs: Number,
+        dailyFat: Number
       },
       { collection: 'users' }
     );

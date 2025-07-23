@@ -176,6 +176,23 @@ export async function updateProfile(userId: string, data: Partial<User>) {
   return parsed;
 }
 
+export async function updateUserInfo(userId: string, data: Partial<User>) {
+  const res = await fetch(`${API}/users/${userId}`, {
+    method: 'PATCH',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data)
+  }).catch(err => {
+    console.error('Network error updating user info', err);
+    throw err;
+  });
+  if (!res.ok) {
+    console.error('Failed to update user info', res.status, res.statusText);
+    throw new Error('Failed to update user');
+  }
+  const parsed = await safeJson<User>(res);
+  return parsed;
+}
+
 export async function getProfile(userId: string) {
   const res = await fetch(`${API}/profile/${userId}`, {
     headers: authHeaders()
