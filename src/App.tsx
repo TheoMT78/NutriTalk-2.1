@@ -5,6 +5,7 @@ import FoodSearch from './components/FoodSearch';
 import Profile from './components/Profile';
 import History from './components/History';
 import Recipes from './components/Recipes';
+import Onboarding from './pages/Onboarding';
 import AIChat from './components/AIChat';
 import FloatingAIButton from './components/FloatingAIButton';
 import SplashScreen from './components/SplashScreen';
@@ -354,7 +355,11 @@ function App() {
     });
   };
 
-  const handleLogin = (u: User | null | undefined, remember: boolean) => {
+  const handleLogin = (
+    u: User | null | undefined,
+    remember: boolean,
+    isNew?: boolean
+  ) => {
     if (!u) {
       console.error('handleLogin called without user');
       return;
@@ -370,7 +375,11 @@ function App() {
       merged.dailyFat = t.fat;
     }
     setUser(merged);
-    setCurrentView(needsProfile ? 'profile' : 'dashboard');
+    if (isNew) {
+      setCurrentView('onboarding');
+    } else {
+      setCurrentView(needsProfile ? 'profile' : 'dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -394,6 +403,47 @@ function App() {
         return <SplashScreen />;
       case 'auth':
         return <Login user={user} onLogin={handleLogin} />;
+      case 'onboarding':
+        return (
+          <Onboarding
+            userId={user.id || ''}
+            onComplete={(info) => {
+              const withNumbers = {
+                ...user,
+                name: info.name,
+                birthDate: info.birthDate,
+                sex: info.sex,
+                height: info.height,
+                weight: info.weight,
+                activityLevel: info.activityLevel,
+                goal: info.goal,
+              } as User;
+              const targets = computeDailyTargets({
+                weight: info.weight,
+                height: info.height,
+                birthDate: info.birthDate,
+                gender: info.sex === 'homme' ? 'homme' : 'femme',
+                activityLevel: info.activityLevel,
+                goal:
+                  info.goal.includes('perte modérée')
+                    ? 'perte10'
+                    : info.goal.includes('perte légère')
+                    ? 'perte5'
+                    : info.goal.includes('prise légère')
+                    ? 'prise5'
+                    : info.goal.includes('prise modérée')
+                    ? 'prise10'
+                    : 'maintien',
+              });
+              withNumbers.dailyCalories = targets.calories;
+              withNumbers.dailyProtein = targets.protein;
+              withNumbers.dailyCarbs = targets.carbs;
+              withNumbers.dailyFat = targets.fat;
+              setUser(withNumbers);
+              setCurrentView('dashboard');
+            }}
+          />
+        );
       case 'dashboard':
         return (
           <Dashboard
@@ -435,7 +485,7 @@ function App() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      {currentView !== 'auth' && currentView !== 'splash' && (
+      {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && (
         <Header
           currentView={currentView}
           onViewChange={setCurrentView}

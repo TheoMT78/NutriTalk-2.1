@@ -271,3 +271,29 @@ export async function searchNutritionLinks(query: string): Promise<WebNutritionR
     return [];
   }
 }
+
+export async function savePersonalInfo(info: {
+  userId: string;
+  name: string;
+  birthDate: string;
+  sex: string;
+  height: number;
+  weight: number;
+  activityLevel: string;
+  goal: string;
+}) {
+  const res = await fetch(`${API}/user/personal-info`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(info),
+  }).catch(err => {
+    console.error('Network error saving personal info', err);
+    throw err;
+  });
+  if (!res.ok) {
+    console.error('Failed to save personal info', res.status, res.statusText);
+    throw new Error('Failed to save personal info');
+  }
+  const data = await safeJson<User>(res);
+  return data;
+}

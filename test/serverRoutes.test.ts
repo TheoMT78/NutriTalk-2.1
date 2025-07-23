@@ -32,6 +32,31 @@ test('register and login user', async () => {
   assert.ok(login.body.token);
 });
 
+test('save personal info', async () => {
+  const register = await request(app)
+    .post('/api/register')
+    .send({ email: 'info@example.com', password: 'secret', name: 'Info' });
+  const token = register.body.token;
+  const userId = register.body.user.id;
+
+  const res = await request(app)
+    .post('/api/user/personal-info')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      userId,
+      name: 'Info',
+      birthDate: '2000-01-01',
+      sex: 'homme',
+      height: 180,
+      weight: 80,
+      activityLevel: '1-2',
+      goal: 'maintien',
+    });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.name, 'Info');
+  assert.ok(res.body.dailyCalories);
+});
+
 test('create and fetch logs', async () => {
   const register = await request(app)
     .post('/api/register')

@@ -4,7 +4,11 @@ import { login, register, setAuthToken, API_BASE } from '../utils/api';
 
 interface LoginProps {
   user: User;
-  onLogin: (user: User | null | undefined, remember: boolean) => void;
+  onLogin: (
+    user: User | null | undefined,
+    remember: boolean,
+    isNew?: boolean
+  ) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
@@ -27,7 +31,7 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         const { user: newUser, token } = await register({ name, email, password });
         if (!newUser) throw new Error('Invalid response from server');
         setAuthToken(token, rememberMe);
-        onLogin(newUser, rememberMe);
+        onLogin(newUser, rememberMe, true);
       } else {
         const { user: loggedUser, token } = await login(email, password, rememberMe);
         if (!loggedUser) throw new Error('Invalid response from server');

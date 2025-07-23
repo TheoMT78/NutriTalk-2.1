@@ -9,6 +9,7 @@ import { body, validationResult } from 'express-validator';
 import { registerUser, loginUser, verifyToken } from './authService.js';
 import { createDb } from './db.js';
 import createDeviceSyncRouter from './deviceSync.js';
+import { computeDailyTargets } from './nutrition.js';
 
 const app = express();
 app.use(cors());
@@ -134,6 +135,49 @@ protectedRouter.put('/profile/:id', async (req, res) => {
   const updated = await db.getUserById(req.params.id);
   const { password: _pw, ...safe } = updated;
   res.json(safe);
+});
+
+protectedRouter.post('/user/personal-info', async (req, res) => {
+  const {
+    userId,
+    name,
+    birthDate,
+    sex,
+    height,
+    weight,
+    activityLevel,
+    goal,
+  } = req.body || {};
+  if (req.userId !== userId) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const targets = computeDailyTargets({
+      weight,
+      height,
+      birthDate,
+      gender: sex,
+      activityLevel,
+      goal,
+    });
+    await db.updateUser(userId, {
+      name,
+      birthDate,
+      sex,
+      heightCm: height,
+      weightKg: weight,
+      activityLevel,
+      goal,
+      dailyCalories: targets.calories,
+      dailyProtein: targets.protein,
+      dailyCarbs: targets.carbs,
+      dailyFat: targets.fat,
+    });
+    const updated = await db.getUserById(userId);
+    const { password: _pw2, ...safe } = updated;
+    res.json(safe);
+  } catch (err) {
+    console.error('personal-info error', err);
+    res.status(500).json({ error: 'Failed to save info' });
+  }
 });
 
 protectedRouter.get('/logs/:userId/:date', async (req, res) => {
