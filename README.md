@@ -45,6 +45,32 @@ Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au 
 `MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 
+## Mise à jour du profil utilisateur
+
+Pour enregistrer les informations personnelles saisies lors de l'onboarding,
+appelez la route protégée `/api/users/:id` avec toutes les données du
+questionnaire. Exemple avec `fetch` :
+
+```ts
+await fetch(`${API_BASE}/users/${userId}`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify({
+    name: 'Clara',
+    dateOfBirth: '2000-06-10',
+    gender: 'femme',
+    height: 165,
+    weight: 60,
+    activityLevel: 'modérée',
+    goal: 'maintien'
+  })
+});
+```
+
+Cette requête met à jour le document utilisateur dans MongoDB. Si un champ est
+manquant ou mal formaté, la route renvoie un code **400** avec la liste des
+erreurs afin de corriger l'envoi.
+
 
 ## Nouveautés
 

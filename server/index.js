@@ -138,8 +138,22 @@ protectedRouter.put('/profile/:id', async (req, res) => {
 });
 
 // Mise à jour du profil utilisateur via /api/users/:id
-protectedRouter.patch('/users/:id', async (req, res) => {
+const userUpdateValidators = [
+  body('name').optional().isString(),
+  body('dateOfBirth').optional().isISO8601(),
+  body('gender').optional().isIn(['homme', 'femme', 'autre']),
+  body('height').optional().isInt({ min: 100, max: 300 }),
+  body('weight').optional().isInt({ min: 30, max: 300 }),
+  body('activityLevel').optional().isString(),
+  body('goal').optional().isString(),
+];
+
+async function handleUserUpdate(req, res) {
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { password, ...safeBody } = req.body;
     await db.updateUser(req.params.id, safeBody);
@@ -151,7 +165,10 @@ protectedRouter.patch('/users/:id', async (req, res) => {
     console.error('update user error', err);
     res.status(500).json({ error: 'Failed to update user' });
   }
-});
+}
+
+protectedRouter.patch('/users/:id', userUpdateValidators, handleUserUpdate);
+protectedRouter.put('/users/:id', userUpdateValidators, handleUserUpdate);
 
 protectedRouter.post('/user/personal-info', async (req, res) => {
   const {

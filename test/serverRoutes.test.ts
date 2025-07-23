@@ -57,6 +57,29 @@ test('save personal info', async () => {
   assert.ok(res.body.dailyCalories);
 });
 
+test('update user info via /api/users/:id', async () => {
+  const register = await request(app)
+    .post('/api/register')
+    .send({ email: 'update@example.com', password: 'secret', name: 'Up' });
+  const token = register.body.token;
+  const userId = register.body.user.id;
+
+  const res = await request(app)
+    .patch(`/api/users/${userId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      dateOfBirth: '1990-05-05',
+      gender: 'femme',
+      height: 165,
+      weight: 60,
+      activityLevel: 'modérée',
+      goal: 'maintien',
+    });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.gender, 'femme');
+  assert.equal(res.body.height, 165);
+});
+
 test('create and fetch logs', async () => {
   const register = await request(app)
     .post('/api/register')

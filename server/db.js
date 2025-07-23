@@ -24,20 +24,20 @@ export async function createDb() {
 
     const userSchema = new mongoose.Schema(
       {
-        id: String,
-        name: String,
-        email: String,
-        password: String,
-        dateOfBirth: String,
-        gender: String,
-        height: Number,
-        weight: Number,
-        activityLevel: String,
-        goal: String,
-        dailyCalories: Number,
-        dailyProtein: Number,
-        dailyCarbs: Number,
-        dailyFat: Number
+        id: { type: String, required: true },
+        name: { type: String, required: true },
+        email: { type: String, required: true },
+        password: { type: String, required: true },
+        dateOfBirth: { type: String },
+        gender: { type: String },
+        height: { type: Number },
+        weight: { type: Number },
+        activityLevel: { type: String },
+        goal: { type: String },
+        dailyCalories: { type: Number },
+        dailyProtein: { type: Number },
+        dailyCarbs: { type: Number },
+        dailyFat: { type: Number }
       },
       { collection: 'users' }
     );
