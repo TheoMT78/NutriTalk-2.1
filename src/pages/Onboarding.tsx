@@ -36,17 +36,33 @@ const years = Array.from({ length: 2025 - 1920 + 1 }, (_, i) => 1920 + i);
 const heights = Array.from({ length: 81 }, (_, i) => 140 + i); // 140..220
 const weights = Array.from({ length: 161 }, (_, i) => 40 + i); // 40..200
 
+const activityOptions = [
+  { value: 'sédentaire', label: '0-1 activité/semaine' },
+  { value: 'légère', label: '1-2 activités/semaine' },
+  { value: 'modérée', label: '3-5 activités/semaine' },
+  { value: 'élevée', label: '6-7 activités/semaine' },
+  { value: 'très élevée', label: 'Plus de 7 activités/semaine' },
+];
+
+const goalOptions = [
+  { value: 'perte10', label: 'Perte modérée (-10%)' },
+  { value: 'perte5', label: 'Perte légère (-5%)' },
+  { value: 'maintien', label: 'Maintien' },
+  { value: 'prise5', label: 'Prise légère (+5%)' },
+  { value: 'prise10', label: 'Prise modérée (+10%)' },
+];
+
 export default function Onboarding({ userId, onComplete }: Props) {
   const [form, setForm] = useState({
     name: '',
     day: 1,
     month: 'Janvier',
     year: 2000,
-    sex: 'Homme',
+    sex: 'homme',
     height: 175,
     weight: 70,
-    activityLevel: '1-2 activités/semaine',
-    goal: 'Maintien'
+    activityLevel: 'légère',
+    goal: 'maintien'
   });
 
   const handleChange = (key: string, value: string | number) => {
@@ -60,11 +76,11 @@ export default function Onboarding({ userId, onComplete }: Props) {
       userId,
       name: form.name,
       birthDate,
-      sex: form.sex.toLowerCase(),
+      sex: form.sex,
       height: Number(form.height),
       weight: Number(form.weight),
       activityLevel: form.activityLevel,
-      goal: form.goal.toLowerCase(),
+      goal: form.goal,
     };
     try {
       const saved = await savePersonalInfo(payload);
@@ -127,9 +143,9 @@ export default function Onboarding({ userId, onComplete }: Props) {
             onChange={e => handleChange('sex', e.target.value)}
             className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
           >
-            <option>Homme</option>
-            <option>Femme</option>
-            <option>Autre</option>
+            <option value="homme">Homme</option>
+            <option value="femme">Femme</option>
+            <option value="autre">Autre</option>
           </select>
         </div>
         <div>
@@ -163,11 +179,11 @@ export default function Onboarding({ userId, onComplete }: Props) {
             onChange={e => handleChange('activityLevel', e.target.value)}
             className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
           >
-            <option>0-1 activité/semaine</option>
-            <option>1-2 activités/semaine</option>
-            <option>3-5 activités/semaine</option>
-            <option>6-7 activités/semaine</option>
-            <option>Plus de 7 activités/semaine</option>
+            {activityOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
         <div>
@@ -177,11 +193,11 @@ export default function Onboarding({ userId, onComplete }: Props) {
             onChange={e => handleChange('goal', e.target.value)}
             className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
           >
-            <option>Perte modérée (-10%)</option>
-            <option>Perte légère (-5%)</option>
-            <option>Maintien</option>
-            <option>Prise légère (+5%)</option>
-            <option>Prise modérée (+10%)</option>
+            {goalOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -430,16 +430,7 @@ function App() {
                 birthDate: info.birthDate,
                 gender: info.sex === 'homme' ? 'homme' : 'femme',
                 activityLevel: info.activityLevel,
-                goal:
-                  info.goal.includes('perte modérée')
-                    ? 'perte10'
-                    : info.goal.includes('perte légère')
-                    ? 'perte5'
-                    : info.goal.includes('prise légère')
-                    ? 'prise5'
-                    : info.goal.includes('prise modérée')
-                    ? 'prise10'
-                    : 'maintien',
+                goal: info.goal as 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10',
               });
               withNumbers.dailyCalories = targets.calories;
               withNumbers.dailyProtein = targets.protein;
