@@ -1,33 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { login, register, setAuthToken } from '../utils/api';
+import { login, register, setAuthToken, API_BASE } from '../utils/api';
 
 interface LoginProps {
   user: User;
-  onLogin: (user: User, remember: boolean) => void;
+  onLogin: (
+    user: User | null | undefined,
+    remember: boolean,
+    isNew?: boolean
+  ) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    console.debug('API base url', API_BASE);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       if (isSignup) {
-        const { user: newUser, token } = await register({ ...user, email, password });
+        const { user: newUser, token } = await register({ name, email, password });
+        if (!newUser) throw new Error('Invalid response from server');
         setAuthToken(token, rememberMe);
-        onLogin(newUser, rememberMe);
+        onLogin(newUser, rememberMe, true);
       } else {
-        const { user: loggedUser, token } = await login(email, password);
-        setAuthToken(token, rememberMe);
+        const { user: loggedUser, token } = await login(email, password, rememberMe);
+        if (!loggedUser) throw new Error('Invalid response from server');
+        console.debug('Logged in user', loggedUser);
+        if (token) setAuthToken(token, rememberMe);
+        else console.warn('No token returned from login');
         onLogin(loggedUser, rememberMe);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur de connexion';
-      alert(msg);
+      let msg = 'Identifiants incorrects';
+      if (err instanceof TypeError) {
+        msg = 'Erreur réseau ou serveur injoignable';
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      setError(msg);
     }
   };
 
@@ -37,6 +57,17 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         <h2 className="text-xl font-bold text-center">
           {isSignup ? 'Créer un compte' : 'Connexion'}
         </h2>
+        {isSignup && (
+          <div>
+            <label className="block text-sm mb-1">Nom d'utilisateur</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input
@@ -78,6 +109,11 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         >
           {isSignup ? 'Créer le compte' : 'Se connecter'}
         </button>
+        {error && (
+          <p className="text-red-400 text-sm text-center" role="alert">
+            {error}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setIsSignup(!isSignup)}

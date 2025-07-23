@@ -5,13 +5,14 @@ import FoodSearch from './components/FoodSearch';
 import Profile from './components/Profile';
 import History from './components/History';
 import Recipes from './components/Recipes';
+import Onboarding from './pages/Onboarding';
 import AIChat from './components/AIChat';
 import FloatingAIButton from './components/FloatingAIButton';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
-import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
+import { getAuthToken, clearAuthToken, isTokenValid, getDailyLog, saveDailyLog, updateProfile, getProfile, syncAll, saveWeightHistory } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
     weight: 70,
     height: 175,
     gender: 'homme' as const,
+    dateOfBirth: '',
     activityLevel: 'modérée' as const,
     goal: 'maintien' as const,
     avatar: 'https://images.pexels.com/photos/1310474/pexels-photo-1310474.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
@@ -32,7 +34,14 @@ function App() {
     dailyWater: 2000
   };
 
-  const targets = computeDailyTargets(defaultUser);
+  const targets = computeDailyTargets({
+    weight: defaultUser.weight,
+    height: defaultUser.height,
+    birthDate: defaultUser.dateOfBirth,
+    gender: defaultUser.gender,
+    activityLevel: defaultUser.activityLevel,
+    goal: defaultUser.goal,
+  });
 
   const storedUserRaw =
     localStorage.getItem('nutritalk-user') ||
@@ -131,9 +140,9 @@ function App() {
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Ensure dashboard shows once the user is authenticated
+  // Navigate to dashboard only when logging in from the auth or splash screens
   useEffect(() => {
-    if (user.id && currentView !== 'dashboard') {
+    if (user.id && (currentView === 'auth' || currentView === 'splash')) {
       setCurrentView('dashboard');
     }
   }, [user.id, currentView]);
@@ -141,7 +150,7 @@ function App() {
   // Splash screen then determine if we should show auth or dashboard
   useEffect(() => {
     const token = getAuthToken();
-    if (!token) {
+    if (!isTokenValid(token)) {
       localStorage.removeItem('nutritalk-user');
       sessionStorage.removeItem('nutritalk-user');
       setUserState({
@@ -153,11 +162,12 @@ function App() {
         dailyWater: defaultUser.dailyWater,
       });
       rememberRef.current = false;
+      clearAuthToken();
     } else {
-      rememberRef.current = !!localStorage.getItem('token');
+      rememberRef.current = document.cookie.includes('token=');
     }
     const timer = setTimeout(() => {
-      setCurrentView(token ? 'dashboard' : 'auth');
+      setCurrentView(isTokenValid(token) ? 'dashboard' : 'auth');
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
@@ -180,22 +190,22 @@ function App() {
   useEffect(() => {
     if (user.id) {
       const today = new Date().toISOString().split('T')[0];
-      syncAll(user.id).then(data => {
-        if (data.profile) setUser(prev => ({ ...prev, ...data.profile }));
-        const log = data.logs?.find((l: { date: string; data: DailyLog }) => l.date === today);
-        if (log) setDailyLog(log.data);
-        if (data.weights) setWeightHistory(data.weights);
-      }).catch(() => {
-        getProfile(user.id).then(setUser).catch(() => {});
-        getDailyLog(user.id, today).then(log => {
-          if (log) setDailyLog(log);
-        }).catch(() => {});
-        getWeightHistory(user.id).then(hist => {
-          if (hist) setWeightHistory(hist);
-        }).catch(() => {});
-      });
+      syncAll(user.id)
+        .then(data => {
+          if (data.profile) setUser(prev => ({ ...prev, ...data.profile }));
+          const log = data.logs?.find((l: { date: string; data: DailyLog }) => l.date === today);
+          if (log) setDailyLog(log.data);
+        })
+        .catch(() => {
+          getProfile(user.id).then(setUser).catch(() => {});
+          getDailyLog(user.id, today)
+            .then(log => {
+              if (log) setDailyLog(log);
+            })
+            .catch(() => {});
+        });
     }
-  }, [user.id, setUser, setDailyLog, setWeightHistory]);
+  }, [user.id]);
 
   useEffect(() => {
     if (user.id) {
@@ -209,29 +219,40 @@ function App() {
     }
   }, [user, user.id]);
 
-  useEffect(() => {
-    if (user.id) {
-      saveWeightHistory(user.id, weightHistory).catch(() => {});
-    }
-  }, [weightHistory, user.id]);
+
 
 
   const addFoodEntry = (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
+    const rounded = {
+      quantity: Math.round(entry.quantity * 10) / 10,
+      calories: Math.round(entry.calories * 10) / 10,
+      protein: Math.round(entry.protein * 10) / 10,
+      carbs: Math.round(entry.carbs * 10) / 10,
+      fat: Math.round(entry.fat * 10) / 10,
+      fiber: entry.fiber ? Math.round(entry.fiber * 10) / 10 : entry.fiber,
+      vitaminC: entry.vitaminC
+        ? Math.round(entry.vitaminC * 10) / 10
+        : entry.vitaminC,
+    };
+
     const newEntry: FoodEntry = {
       ...entry,
+      ...rounded,
       id: Date.now().toString(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const updatedLog = {
       ...dailyLog,
       entries: [...dailyLog.entries, newEntry],
-      totalCalories: dailyLog.totalCalories + entry.calories,
-      totalProtein: dailyLog.totalProtein + entry.protein,
-      totalCarbs: dailyLog.totalCarbs + entry.carbs,
-      totalFat: dailyLog.totalFat + entry.fat,
-      totalFiber: (dailyLog.totalFiber || 0) + (entry.fiber || 0),
-      totalVitaminC: (dailyLog.totalVitaminC || 0) + (entry.vitaminC || 0)
+      totalCalories: Math.round((dailyLog.totalCalories + rounded.calories) * 10) / 10,
+      totalProtein: Math.round((dailyLog.totalProtein + rounded.protein) * 10) / 10,
+      totalCarbs: Math.round((dailyLog.totalCarbs + rounded.carbs) * 10) / 10,
+      totalFat: Math.round((dailyLog.totalFat + rounded.fat) * 10) / 10,
+      totalFiber:
+        Math.round(((dailyLog.totalFiber || 0) + (rounded.fiber || 0)) * 10) / 10,
+      totalVitaminC:
+        Math.round(((dailyLog.totalVitaminC || 0) + (rounded.vitaminC || 0)) * 10) / 10,
     };
 
     setDailyLog(updatedLog);
@@ -255,6 +276,54 @@ function App() {
 
     setDailyLog(updatedLog);
     if (user.id) saveDailyLog(user.id, updatedLog.date, updatedLog).catch(() => {});
+  };
+
+  const updateFoodEntry = (updated: FoodEntry) => {
+    const index = dailyLog.entries.findIndex(e => e.id === updated.id);
+    if (index === -1) return;
+    const old = dailyLog.entries[index];
+    const ratio = updated.quantity / (old.quantity || 1);
+    const rounded: FoodEntry = {
+      ...old,
+      quantity: Math.round(updated.quantity * 10) / 10,
+      unit: updated.unit,
+      calories: Math.round(old.calories * ratio * 10) / 10,
+      protein: Math.round(old.protein * ratio * 10) / 10,
+      carbs: Math.round(old.carbs * ratio * 10) / 10,
+      fat: Math.round(old.fat * ratio * 10) / 10,
+      fiber: old.fiber ? Math.round((old.fiber * ratio) * 10) / 10 : old.fiber,
+      vitaminC: old.vitaminC ? Math.round((old.vitaminC * ratio) * 10) / 10 : old.vitaminC,
+    };
+    const entries = [...dailyLog.entries];
+    entries[index] = { ...rounded };
+    const newLog = {
+      ...dailyLog,
+      entries,
+      totalCalories:
+        Math.round(
+          (dailyLog.totalCalories - old.calories + rounded.calories) * 10
+        ) / 10,
+      totalProtein:
+        Math.round(
+          (dailyLog.totalProtein - old.protein + rounded.protein) * 10
+        ) / 10,
+      totalCarbs:
+        Math.round((dailyLog.totalCarbs - old.carbs + rounded.carbs) * 10) / 10,
+      totalFat:
+        Math.round((dailyLog.totalFat - old.fat + rounded.fat) * 10) / 10,
+      totalFiber:
+        Math.round(
+          ((dailyLog.totalFiber || 0) - (old.fiber || 0) + (rounded.fiber || 0)) *
+            10
+        ) / 10,
+      totalVitaminC:
+        Math.round(
+          ((dailyLog.totalVitaminC || 0) - (old.vitaminC || 0) +
+            (rounded.vitaminC || 0)) * 10
+        ) / 10,
+    } as DailyLog;
+    setDailyLog(newLog);
+    if (user.id) saveDailyLog(user.id, newLog.date, newLog).catch(() => {});
   };
 
   const updateWater = (amount: number) => {
@@ -284,22 +353,50 @@ function App() {
     const today = new Date().toISOString().split('T')[0];
     setWeightHistory(prev => {
       const filtered = prev.filter(p => p.date !== today);
-      return [...filtered, { date: today, weight: newWeight }];
+      const newHistory = [...filtered, { date: today, weight: newWeight }];
+      if (user.id) saveWeightHistory(user.id, newHistory).catch(() => {});
+      return newHistory;
     });
   };
 
-  const handleLogin = (u: User, remember: boolean) => {
+  const handleLogin = (
+    u: User | null | undefined,
+    remember: boolean,
+    isNew?: boolean
+  ) => {
+    if (!u) {
+      console.error('handleLogin called without user');
+      return;
+    }
     rememberRef.current = remember;
     const merged = { ...defaultUser, ...u } as User;
+    const needsInfo =
+      !u.dateOfBirth ||
+      !u.height ||
+      !u.weight ||
+      !u.activityLevel ||
+      !u.goal ||
+      !u.gender;
     if (!u.dailyCalories) {
-      const t = computeDailyTargets(merged);
+      const t = computeDailyTargets({
+        weight: merged.weight,
+        height: merged.height,
+        birthDate: merged.dateOfBirth,
+        gender: merged.gender,
+        activityLevel: merged.activityLevel,
+        goal: merged.goal,
+      });
       merged.dailyCalories = t.calories;
       merged.dailyProtein = t.protein;
       merged.dailyCarbs = t.carbs;
       merged.dailyFat = t.fat;
     }
     setUser(merged);
-    setCurrentView('dashboard');
+    if (isNew || needsInfo) {
+      setCurrentView('onboarding');
+    } else {
+      setCurrentView('dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -323,12 +420,38 @@ function App() {
         return <SplashScreen />;
       case 'auth':
         return <Login user={user} onLogin={handleLogin} />;
+      case 'onboarding':
+        return (
+          <Onboarding
+            userId={user.id || ''}
+            onComplete={(info: User) => {
+              const merged = { ...user, ...info } as User;
+              if (!merged.dailyCalories) {
+                const t = computeDailyTargets({
+                  weight: merged.weight,
+                  height: merged.height,
+                  birthDate: merged.dateOfBirth,
+                  gender: merged.gender as 'homme' | 'femme',
+                  activityLevel: merged.activityLevel,
+                  goal: merged.goal as 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10',
+                });
+                merged.dailyCalories = t.calories;
+                merged.dailyProtein = t.protein;
+                merged.dailyCarbs = t.carbs;
+                merged.dailyFat = t.fat;
+              }
+              setUser(merged);
+              setCurrentView('dashboard');
+            }}
+          />
+        );
       case 'dashboard':
         return (
           <Dashboard
             user={user}
             dailyLog={dailyLog}
             onRemoveEntry={removeFoodEntry}
+            onUpdateEntry={updateFoodEntry}
             onUpdateWater={updateWater}
             onUpdateSteps={updateSteps}
             onUpdateWeight={updateWeight}
@@ -349,6 +472,7 @@ function App() {
             user={user}
             dailyLog={dailyLog}
             onRemoveEntry={removeFoodEntry}
+            onUpdateEntry={updateFoodEntry}
             onUpdateWater={updateWater}
             onUpdateSteps={updateSteps}
             onUpdateWeight={updateWeight}
@@ -362,7 +486,7 @@ function App() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      {currentView !== 'auth' && currentView !== 'splash' && (
+      {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && (
         <Header
           currentView={currentView}
           onViewChange={setCurrentView}
@@ -385,6 +509,8 @@ function App() {
             <AIChat
               onClose={() => setIsAIChatOpen(false)}
               onAddFood={addFoodEntry}
+              onUpdateEntry={updateFoodEntry}
+              dailyLog={dailyLog}
               isDarkMode={isDarkMode}
             />
           )}

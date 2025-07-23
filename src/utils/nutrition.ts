@@ -55,8 +55,27 @@ export function calculateMacroTargets(calories: number): Omit<MacroTargets, 'cal
   };
 }
 
-export function computeDailyTargets(user: { weight: number; height: number; age: number; gender: 'homme' | 'femme'; activityLevel: string; goal: 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10'; }): MacroTargets {
-  const calories = calculateTDEE(user);
+export function computeAge(birthDate?: string, age?: number): number {
+  if (typeof age === 'number' && !Number.isNaN(age)) return age;
+  if (!birthDate) return 0;
+  const d = new Date(birthDate);
+  if (Number.isNaN(d.getTime())) return 0;
+  const diff = Date.now() - d.getTime();
+  const a = new Date(diff);
+  return Math.abs(a.getUTCFullYear() - 1970);
+}
+
+export function computeDailyTargets(user: {
+  weight: number;
+  height: number;
+  age?: number;
+  birthDate?: string;
+  gender: 'homme' | 'femme';
+  activityLevel: string;
+  goal: 'perte5' | 'perte10' | 'maintien' | 'prise5' | 'prise10';
+}): MacroTargets {
+  const age = computeAge(user.birthDate, user.age);
+  const calories = calculateTDEE({ ...user, age });
   const macros = calculateMacroTargets(calories);
   return { calories, ...macros };
 }

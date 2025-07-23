@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { computeDailyTargets, calculateMacroTargets } from '../utils/nutrition';
+import { computeDailyTargets, calculateMacroTargets, computeAge } from '../utils/nutrition';
 import { User as UserIcon, Settings, Target, Activity, Palette } from 'lucide-react';
 import NumberStepper from './NumberStepper';
 import { User as UserType } from '../types';
+
+// Utilitaire pour retirer le champ password
+function removePassword(obj: Record<string, unknown>) {
+  // On retire le champ password s'il existe (utile pour l'update du profil)
+  const { password, ...rest } = obj;
+  void password;
+  return rest;
+}
 
 interface ProfileProps {
   user: UserType;
@@ -12,62 +20,82 @@ interface ProfileProps {
 
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(user);
+  const [formData, setFormData] = useState(() => ({
+    ...user,
+    age: user.age || computeAge(user.dateOfBirth)
+  }));
   const [locks, setLocks] = useState({ calories: false, protein: false, carbs: false, fat: false });
-  const autoTargetsRef = useRef(computeDailyTargets(user));
+  const autoTargetsRef = useRef(
+    computeDailyTargets({
+      weight: user.weight,
+      height: user.height,
+      birthDate: user.dateOfBirth,
+      gender: user.gender,
+      activityLevel: user.activityLevel,
+      goal: user.goal,
+    })
+  );
 
   const handleSave = () => {
-    const auto = computeDailyTargets({
-      weight: formData.weight,
-      height: formData.height,
-      age: formData.age,
-      gender: formData.gender,
-      activityLevel: formData.activityLevel,
-      goal: formData.goal,
-    });
+  const auto = computeDailyTargets({
+    weight: formData.weight,
+    height: formData.height,
+    age: formData.age,
+    birthDate: formData.dateOfBirth,
+    gender: formData.gender,
+    activityLevel: formData.activityLevel,
+    goal: formData.goal,
+  });
 
-    const updated = { ...formData } as UserType;
+  const updated = { ...formData } as UserType;
+  updated.gender = updated.gender as 'homme' | 'femme';
+  updated.dateOfBirth = formData.dateOfBirth;
+  updated.age = computeAge(formData.dateOfBirth, formData.age);
 
-    if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
-      updated.dailyCalories = auto.calories;
-    }
+  if (!locks.calories && formData.dailyCalories === user.dailyCalories) {
+    updated.dailyCalories = auto.calories;
+  }
 
-    if (!locks.protein && !locks.carbs && !locks.fat) {
-      const macros = calculateMacroTargets(updated.dailyCalories);
-      updated.dailyProtein = macros.protein;
-      updated.dailyCarbs = macros.carbs;
-      updated.dailyFat = macros.fat;
-    } else if (locks.calories) {
-      let remaining = updated.dailyCalories;
-      if (locks.protein) remaining -= updated.dailyProtein * 4;
-      if (locks.carbs) remaining -= updated.dailyCarbs * 4;
-      if (locks.fat) remaining -= updated.dailyFat * 9;
-      const unlocked = [] as ('protein' | 'carbs' | 'fat')[];
-      if (!locks.protein) unlocked.push('protein');
-      if (!locks.carbs) unlocked.push('carbs');
-      if (!locks.fat) unlocked.push('fat');
-      if (unlocked.length === 1) {
-        const key = unlocked[0];
-        if (key === 'protein') updated.dailyProtein = Math.round(remaining / 4);
-        if (key === 'carbs') updated.dailyCarbs = Math.round(remaining / 4);
-        if (key === 'fat') updated.dailyFat = Math.round(remaining / 9);
-      } else {
-        const macros = calculateMacroTargets(updated.dailyCalories);
-        if (!locks.protein) updated.dailyProtein = macros.protein;
-        if (!locks.carbs) updated.dailyCarbs = macros.carbs;
-        if (!locks.fat) updated.dailyFat = macros.fat;
-      }
+  if (!locks.protein && !locks.carbs && !locks.fat) {
+    const macros = calculateMacroTargets(updated.dailyCalories);
+    updated.dailyProtein = macros.protein;
+    updated.dailyCarbs = macros.carbs;
+    updated.dailyFat = macros.fat;
+  } else if (locks.calories) {
+    let remaining = updated.dailyCalories;
+    if (locks.protein) remaining -= updated.dailyProtein * 4;
+    if (locks.carbs) remaining -= updated.dailyCarbs * 4;
+    if (locks.fat) remaining -= updated.dailyFat * 9;
+    const unlocked = [] as ('protein' | 'carbs' | 'fat')[];
+    if (!locks.protein) unlocked.push('protein');
+    if (!locks.carbs) unlocked.push('carbs');
+    if (!locks.fat) unlocked.push('fat');
+    if (unlocked.length === 1) {
+      const key = unlocked[0];
+      if (key === 'protein') updated.dailyProtein = Math.round(remaining / 4);
+      if (key === 'carbs') updated.dailyCarbs = Math.round(remaining / 4);
+      if (key === 'fat') updated.dailyFat = Math.round(remaining / 9);
     } else {
-      updated.dailyCalories = updated.dailyProtein * 4 + updated.dailyCarbs * 4 + updated.dailyFat * 9;
+      const macros = calculateMacroTargets(updated.dailyCalories);
+      if (!locks.protein) updated.dailyProtein = macros.protein;
+      if (!locks.carbs) updated.dailyCarbs = macros.carbs;
+      if (!locks.fat) updated.dailyFat = macros.fat;
     }
+  } else {
+    updated.dailyCalories = updated.dailyProtein * 4 + updated.dailyCarbs * 4 + updated.dailyFat * 9;
+  }
 
-    onUpdateUser(updated);
-    setFormData(updated);
-    setIsEditing(false);
-  };
+  // !!! Ajout clé : on retire le password avant d'envoyer l'update !!!
+  const safeUser = removePassword(updated);
+
+  onUpdateUser(safeUser);
+  setFormData(updated);
+  setIsEditing(false);
+};
+
 
   const handleCancel = () => {
-    setFormData(user);
+    setFormData({ ...user, age: user.age || computeAge(user.dateOfBirth) });
     setLocks({ calories: false, protein: false, carbs: false, fat: false });
     setIsEditing(false);
   };
@@ -78,6 +106,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       weight: formData.weight,
       height: formData.height,
       age: formData.age,
+      birthDate: formData.dateOfBirth,
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
@@ -105,7 +134,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
   const calculateBMI = () => {
     const heightInMeters = formData.height / 100;
-    return (formData.weight / (heightInMeters * heightInMeters)).toFixed(1);
+    return ((formData.weight ?? 0) / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
   const calculateNeeds = () => {
@@ -182,16 +211,22 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Âge</label>
+              <label className="block text-sm font-medium mb-2">Date de naissance</label>
               {isEditing ? (
                 <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) }))}
+                  type="date"
+                  value={formData.dateOfBirth || ''}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      dateOfBirth: e.target.value,
+                      age: computeAge(e.target.value)
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
                 />
               ) : (
-                <p className="text-gray-700 dark:text-gray-300">{user.age} ans</p>
+                <p className="text-gray-700 dark:text-gray-300">{user.dateOfBirth || ''}</p>
               )}
             </div>
 
@@ -215,14 +250,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Poids (kg)</label>
-              {isEditing ? (
-                <input
-                  type="number"
-                  step="0.1"
+            {isEditing ? (
+                <select
                   value={formData.weight}
-                  onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                />
+                >
+                  {Array.from({ length: 161 }, (_, i) => 40 + i).map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
               ) : (
                 <p className="text-gray-700 dark:text-gray-300">{user.weight} kg</p>
               )}
@@ -230,13 +267,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
             <div>
               <label className="block text-sm font-medium mb-2">Taille (cm)</label>
-              {isEditing ? (
-                <input
-                  type="number"
+            {isEditing ? (
+                <select
                   value={formData.height}
                   onChange={(e) => setFormData(prev => ({ ...prev, height: parseInt(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                />
+                >
+                  {Array.from({ length: 81 }, (_, i) => 140 + i).map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
               ) : (
                 <p className="text-gray-700 dark:text-gray-300">{user.height} cm</p>
               )}

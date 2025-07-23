@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
+import { searchNutritionLinks } from '../utils/api';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
-import { Recipe, FoodItem } from '../types';
+import { detectModificationIntent } from '../utils/detectModification';
+import { Recipe, FoodItem, DailyLog, FoodEntry } from '../types';
 
 const normalize = (str: string) =>
   str
@@ -35,6 +37,8 @@ interface AIChatProps {
     category: string;
     meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation';
   }) => void;
+  onUpdateEntry: (entry: FoodEntry) => void;
+  dailyLog: DailyLog;
   onAddRecipe?: (recipe: Recipe) => void;
   isDarkMode: boolean;
 }
@@ -64,9 +68,20 @@ interface FoodSuggestion {
   category: string;
   meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation';
   confidence: number;
+  action?: 'edit';
+  entryId?: string;
+  oldQuantity?: number;
+  alternatives?: string[];
 }
 
-const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDarkMode }) => {
+const AIChat: React.FC<AIChatProps> = ({
+  onClose,
+  onAddFood,
+  onUpdateEntry,
+  dailyLog,
+  onAddRecipe,
+  isDarkMode,
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -84,8 +99,11 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const analyzeFood = async (description: string): Promise<FoodSuggestion[]> => {
+  const analyzeFood = async (
+    description: string
+  ): Promise<{ suggestions: FoodSuggestion[]; questions: string[] }> => {
     const suggestions: FoodSuggestion[] = [];
+    const questions: string[] = [];
     const lower = description.toLowerCase();
     let meal: "petit-déjeuner" | "déjeuner" | "dîner" | "collation" = "déjeuner";
     if (lower.includes("petit-déjeuner") || lower.includes("matin")) meal = "petit-déjeuner";
@@ -95,37 +113,42 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     const parsed = await parseFoods(description);
 
     for (const food of parsed) {
-      const baseName = normalize(food.nom);
+      const baseName = normalize(food.name);
       const fromKeywords = keywordFoods.find(k =>
         k.keywords.some(kw => baseName.includes(normalize(kw)))
       );
       let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
       if (!info) {
-        const closest = findClosestFood(baseName, fullFoodBase);
-        if (closest) info = closest;
+        const cands = findClosestFoods(baseName, fullFoodBase, 2);
+        if (cands.length > 1 && cands[0].score - cands[1].score <= 1) {
+          questions.push(`Tu veux dire ${cands[0].food.name} ou ${cands[1].food.name} ?`);
+          continue;
+        }
+        const closest = cands[0]?.food || findClosestFood(baseName, fullFoodBase);
+        if (closest) info = closest as FoodItem;
       }
       if (!info) {
-        const ext = await searchNutrition(`${food.nom} ${food.marque || ''}`.trim());
+        const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
         if (ext) {
           info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
         }
       }
       if (!info) continue;
       const baseAmount = parseFloat(info.unit) || 100;
-      let grams = food.quantite;
-      if (food.unite === "unite") {
+      let grams = food.quantity;
+      if (food.unit === "unite") {
         const w = unitWeights[normalize(baseName)] || baseAmount;
-        grams = food.quantite * w;
-      } else if (food.unite === "cas") {
-        grams = food.quantite * 15;
-      } else if (food.unite === "cac") {
-        grams = food.quantite * 5;
+        grams = food.quantity * w;
+      } else if (food.unit === "cas") {
+        grams = food.quantity * 15;
+      } else if (food.unit === "cac") {
+        grams = food.quantity * 5;
       }
       const mult = grams / baseAmount;
       suggestions.push({
         name: info.name,
-        quantity: food.quantite,
-        unit: food.unite,
+        quantity: food.quantity,
+        unit: food.unit,
         calories: info.calories * mult,
         protein: info.protein * mult,
         carbs: info.carbs * mult,
@@ -140,7 +163,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
       });
     }
-    return suggestions;
+    return { suggestions, questions };
   };
 
   const parseRecipe = (text: string): Recipe | null => {
@@ -188,29 +211,77 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     }, 10000);
 
     try {
+      const mod = await detectModificationIntent(input).catch(() => null);
+      if (mod) {
+        const target = dailyLog.entries.find(
+          e =>
+            e.meal === mod.meal &&
+            normalize(e.name) === normalize(mod.name)
+        );
+        clearTimeout(timeout);
+        if (target) {
+          const suggestion: FoodSuggestion = {
+            name: target.name,
+            quantity: mod.newQuantity,
+            unit: mod.unit || target.unit,
+            calories: target.calories,
+            protein: target.protein,
+            carbs: target.carbs,
+            fat: target.fat,
+            category: target.category,
+            meal: target.meal,
+            confidence: 1,
+            action: 'edit',
+            entryId: target.id,
+            oldQuantity: target.quantity,
+          };
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: '📝 Modification détectée :',
+            timestamp: new Date(),
+            suggestions: [suggestion],
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        } else {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              type: 'ai',
+              content: `Je n\u2019ai pas trouvé ${mod.name} pour ce ${mod.meal}.`,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+        setIsLoading(false);
+        return;
+      }
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const suggestions = await analyzeFood(input).catch(e => {
+      const { suggestions, questions } = await analyzeFood(input).catch(e => {
         console.error('analyzeFood error', e);
-        return [] as FoodSuggestion[];
+        return { suggestions: [] as FoodSuggestion[], questions: [] as string[] };
       });
       const recipe = parseRecipe(input);
 
       if (timedOut) return;
     
     let aiResponse = '';
-    if (suggestions.length > 0) {
+    if (questions.length > 0) {
+      aiResponse = questions.join('\n');
+    } else if (suggestions.length > 0) {
       aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
 
       suggestions.forEach((suggestion, index) => {
-        const totalCalories = suggestion.calories.toFixed(0);
+        const totalCalories = (suggestion.calories ?? 0).toFixed(0);
         const displayUnit = suggestion.unit.replace(/^100/, '');
         aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
           `\n        - ${totalCalories} kcal` +
-          `\n        - Protéines: ${suggestion.protein.toFixed(1)}g` +
-          `\n        - Glucides: ${suggestion.carbs.toFixed(1)}g` +
-          `\n        - Lipides: ${suggestion.fat.toFixed(1)}g`;
+          `\n        - Protéines: ${(suggestion.protein ?? 0).toFixed(1)}g` +
+          `\n        - Glucides: ${(suggestion.carbs ?? 0).toFixed(1)}g` +
+          `\n        - Lipides: ${(suggestion.fat ?? 0).toFixed(1)}g`;
       });
 
       const totals = suggestions.reduce(
@@ -225,18 +296,27 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
       );
 
-      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides`;
+      aiResponse += `\n\n**Total**: ${(totals.calories ?? 0).toFixed(0)} kcal - ${(totals.protein ?? 0).toFixed(1)}g protéines, ${(totals.carbs ?? 0).toFixed(1)}g glucides, ${(totals.fat ?? 0).toFixed(1)}g lipides`;
       if (totals.fiber) {
-        aiResponse += `, ${totals.fiber.toFixed(1)}g fibres`;
+        aiResponse += `, ${(totals.fiber ?? 0).toFixed(1)}g fibres`;
       }
       if (totals.vitaminC) {
-        aiResponse += `, ${totals.vitaminC.toFixed(0)}mg vitamine C`;
+        aiResponse += `, ${(totals.vitaminC ?? 0).toFixed(0)}mg vitamine C`;
       }
       aiResponse += '.';
 
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
-      aiResponse = "Aucun résultat fiable trouvé pour votre message.";
+      const web = await searchNutritionLinks(input);
+      if (web.length > 0) {
+        aiResponse = `🔎 Je n\u2019ai pas trouvé "${input}" dans la base principale. Voici ce que j\u2019ai trouvé sur Internet :`;
+        web.forEach((r, i) => {
+          aiResponse += `\n${i + 1}. [${r.title}](${r.link})`;
+        });
+        aiResponse += '\n\n💡 Clique sur un lien pour consulter et ajouter manuellement les macros.';
+      } else {
+        aiResponse = "Aucun résultat fiable trouvé pour votre message.";
+      }
     }
 
     const aiMessage: Message = {
@@ -326,16 +406,28 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
   };
 
   const handleAddSuggestion = (suggestion: FoodSuggestion) => {
-    onAddFood(suggestion);
-    
-    const confirmMessage: Message = {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: `✅ **${suggestion.name}** a été ajouté à votre journal pour le ${suggestion.meal} !`,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, confirmMessage]);
+    if (suggestion.action === 'edit' && suggestion.entryId) {
+      const entry = dailyLog.entries.find(e => e.id === suggestion.entryId);
+      if (entry) {
+        onUpdateEntry({ ...entry, quantity: suggestion.quantity, unit: suggestion.unit });
+        const confirmMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `✅ ${entry.name} mis à jour à ${suggestion.quantity}${suggestion.unit.replace(/^100/, '')} pour le ${entry.meal}.`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, confirmMessage]);
+      }
+    } else {
+      onAddFood(suggestion);
+      const confirmMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `✅ **${suggestion.name}** a été ajouté à votre journal pour le ${suggestion.meal} !`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+    }
   };
 
   return (
@@ -410,16 +502,24 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
                           <div className="flex-1">
                             <div className="font-medium">{suggestion.name}</div>
                             <div className="text-sm opacity-70">
-                              {suggestion.quantity}
-                              {suggestion.unit.replace(/^100/, '')} • {suggestion.calories.toFixed(0)} kcal
+                              {suggestion.action === 'edit'
+                                ? `${suggestion.oldQuantity ?? ''}${suggestion.unit.replace(/^100/, '')} ➜ ${suggestion.quantity}${suggestion.unit.replace(/^100/, '')}`
+                                : `${suggestion.quantity}${suggestion.unit.replace(/^100/, '')} • ${(suggestion.calories ?? 0).toFixed(0)} kcal`}
                             </div>
+                            {suggestion.alternatives && (
+                              <div className="mt-1">
+                                {`Tu veux dire ${suggestion.name} ou ${suggestion.alternatives[0]} ?`}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleAddSuggestion(suggestion)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm"
-                          >
-                            Ajouter
-                          </button>
+                          {!suggestion.alternatives && (
+                            <button
+                              onClick={() => handleAddSuggestion(suggestion)}
+                              className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm"
+                            >
+                              {suggestion.action === 'edit' ? 'Modifier' : 'Ajouter'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

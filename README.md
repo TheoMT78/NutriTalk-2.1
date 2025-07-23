@@ -25,9 +25,9 @@ npm run update-food-db
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
 En production, l'application pointe par défaut vers
-`https://nutritalk-2-0.onrender.com/api`. Créez un fichier `.env` à la racine si
-vous souhaitez cibler un autre serveur ou utiliser `localhost` en
-développement :
+`https://nutritalk-2-0.onrender.com/api`. Utilisez le fichier `.env.example`
+pour créer votre propre `.env` si vous souhaitez cibler un autre serveur ou
+utiliser `localhost` en développement :
 
 ```bash
 VITE_API_URL=http://localhost:3001/api
@@ -37,9 +37,39 @@ EDAMAM_APP_KEY=
 SPOONACULAR_KEY=
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
+MONGODB_URI=
+MONGODB_DBNAME=nutritalk
 ```
 Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
+`MONGODB_URI` permet de stocker toutes les données dans un cluster MongoDB au lieu du fichier `db.json`.
+`MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
+
+## Mise à jour du profil utilisateur
+
+Pour enregistrer les informations personnelles saisies lors de l'onboarding,
+appelez la route protégée `/api/users/:id` avec toutes les données du
+questionnaire. Exemple avec `fetch` :
+
+```ts
+await fetch(`${API_BASE}/users/${userId}`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  body: JSON.stringify({
+    name: 'Clara',
+    dateOfBirth: '2000-06-10',
+    gender: 'femme',
+    height: 165,
+    weight: 60,
+    activityLevel: 'modérée',
+    goal: 'maintien'
+  })
+});
+```
+
+Cette requête met à jour le document utilisateur dans MongoDB. Si un champ est
+manquant ou mal formaté, la route renvoie un code **400** avec la liste des
+erreurs afin de corriger l'envoi.
 
 
 ## Nouveautés
@@ -105,3 +135,5 @@ Définissez les variables suivantes dans `.env` :
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
 ```
+
+Ce projet est distribué sous licence MIT. Voir le fichier LICENSE pour plus d'informations.

@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { User, DailyLog } from '../types';
 import { CALORIES_PER_STEP } from './StepProgress';
+import { safeNumber } from '../utils/safeNumber';
 
 interface Props {
   user: User;
@@ -80,16 +81,16 @@ const MacroDetailsModal: React.FC<Props> = ({ user, log, onClose }) => {
               <React.Fragment key={item.key}>
                 <tr>
                   <td className="py-2">{item.key}</td>
-                  <td className="py-2 text-right">{item.total.toFixed(0)}{item.unit}</td>
-                  <td className="py-2 text-right">{item.goal.toFixed(0)}{item.unit}</td>
-                  <td className="py-2 text-right">{Math.max(item.goal - item.total, 0).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{safeNumber(item.total).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{safeNumber(item.goal).toFixed(0)}{item.unit}</td>
+                  <td className="py-2 text-right">{Math.max(safeNumber(item.goal) - safeNumber(item.total), 0).toFixed(0)}{item.unit}</td>
                 </tr>
                 <tr>
                   <td colSpan={4} className="pb-2">
                     <div className="w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className={`${item.color} h-2 rounded-full`}
-                        style={{ width: `${Math.min((item.total / item.goal) * 100, 100)}%` }}
+                        style={{ width: `${safeNumber(item.goal) > 0 ? Math.min((safeNumber(item.total) / safeNumber(item.goal)) * 100, 100) : 0}%` }}
                       />
                     </div>
                   </td>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart } from 'lucide-react';
+import { safeNumber } from '../utils/safeNumber';
 
 interface MacroChartProps {
   protein: number;
@@ -9,7 +10,10 @@ interface MacroChartProps {
 }
 
 const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className = '' }) => {
-  const total = protein + carbs + fat;
+  const safeProtein = safeNumber(protein);
+  const safeCarbs = safeNumber(carbs);
+  const safeFat = safeNumber(fat);
+  const total = safeProtein + safeCarbs + safeFat;
   
   if (total === 0) {
     return (
@@ -29,13 +33,13 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
     );
   }
 
-  const proteinPercentage = (protein / total) * 100;
-  const carbsPercentage = (carbs / total) * 100;
-  const fatPercentage = (fat / total) * 100;
+  const proteinPercentage = total ? (safeProtein / total) * 100 : 0;
+  const carbsPercentage = total ? (safeCarbs / total) * 100 : 0;
+  const fatPercentage = total ? (safeFat / total) * 100 : 0;
 
-  const proteinCalories = protein * 4;
-  const carbsCalories = carbs * 4;
-  const fatCalories = fat * 9;
+  const proteinCalories = safeProtein * 4;
+  const carbsCalories = safeCarbs * 4;
+  const fatCalories = safeFat * 9;
   const totalCalories = proteinCalories + carbsCalories + fatCalories;
 
   return (
@@ -60,7 +64,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Protéines</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {protein.toFixed(0)}g ({proteinPercentage.toFixed(0)}%)
+              {safeProtein.toFixed(0)}g ({proteinPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -82,7 +86,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Glucides</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {carbs.toFixed(0)}g ({carbsPercentage.toFixed(0)}%)
+              {safeCarbs.toFixed(0)}g ({carbsPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -104,7 +108,7 @@ const MacroChart: React.FC<MacroChartProps> = ({ protein, carbs, fat, className 
               <span className="text-sm font-medium">Lipides</span>
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {fat.toFixed(0)}g ({fatPercentage.toFixed(0)}%)
+              {safeFat.toFixed(0)}g ({fatPercentage.toFixed(0)}%)
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

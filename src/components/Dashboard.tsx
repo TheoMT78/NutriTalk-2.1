@@ -1,11 +1,14 @@
 import React from 'react';
 import { Target, TrendingUp, Droplets, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
-import { User, DailyLog } from '../types';
+import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
+import EditEntryModal from './EditEntryModal';
 import StepProgress, { CALORIES_PER_STEP } from './StepProgress';
 import WaterProgress from './WaterProgress';
 import CalorieProgress from './CalorieProgress';
 import WeightChart from './WeightChart';
+import { deviceSync } from '../utils/deviceSync';
+import { safeNumber } from '../utils/safeNumber';
 
 interface DashboardProps {
   user: User;
@@ -14,6 +17,7 @@ interface DashboardProps {
   onUpdateWater: (amount: number) => void;
   onUpdateSteps: (amount: number) => void;
   onUpdateWeight: (delta: number) => void;
+  onUpdateEntry: (entry: FoodEntry) => void;
   weightHistory: { date: string; weight: number }[];
 }
 
@@ -24,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onUpdateWater,
   onUpdateSteps,
   onUpdateWeight,
+  onUpdateEntry,
   weightHistory
 }) => {
   const getMealIcon = (meal: string) => {
@@ -36,9 +41,58 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const dailyCaloriesGoal = safeNumber(user?.dailyCalories);
+  const dailyProteinGoal = safeNumber(user?.dailyProtein);
+  const dailyCarbGoalBase = safeNumber(user?.dailyCarbs);
+  const dailyFatGoal = safeNumber(user?.dailyFat);
+  const stepGoal = safeNumber(user?.stepGoal);
+  const waterGoal = safeNumber(user?.dailyWater);
+
+  const syncRef = React.useRef<Record<string, boolean>>({});
+  const [isSyncingSteps, setIsSyncingSteps] = React.useState(false);
+
+  const syncSteps = React.useCallback(async () => {
+    if (!user.id || isSyncingSteps) return;
+    setIsSyncingSteps(true);
+    try {
+      const steps = await deviceSync({ userId: user.id, date: dailyLog.date });
+      if (
+        typeof steps === 'number' &&
+        !Number.isNaN(steps) &&
+        steps >= 0 &&
+        steps <= 100000
+      ) {
+        const diff = steps - dailyLog.steps;
+        if (diff > 0 && diff < 20000) {
+          onUpdateSteps(diff);
+        }
+      } else {
+        console.warn('Invalid step count from deviceSync:', steps);
+      }
+    } catch (err) {
+      console.error('deviceSync failure', err);
+    } finally {
+      setIsSyncingSteps(false);
+      syncRef.current[dailyLog.date] = true;
+    }
+  }, [user.id, dailyLog.date, dailyLog.steps, isSyncingSteps, onUpdateSteps]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (syncRef.current[dailyLog.date]) return;
+    const run = async () => {
+      await syncSteps();
+      if (cancelled) setIsSyncingSteps(false);
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user.id, dailyLog.date]);
+
   const getGoalMessage = () => {
     const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
-    const totalGoal = user.dailyCalories + stepsCalories;
+    const totalGoal = dailyCaloriesGoal + stepsCalories;
     const caloriesRemaining = totalGoal - dailyLog.totalCalories;
     if (caloriesRemaining > 0) {
       return `Il vous reste ${caloriesRemaining.toFixed(0)} calories aujourd'hui`;
@@ -47,12 +101,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
-  const totalGoal = user.dailyCalories + stepsCalories;
+  const totalGoal = dailyCaloriesGoal + stepsCalories;
   const caloriesRemaining = totalGoal - dailyLog.totalCalories;
   const extraCarbs = stepsCalories / 4;
-  const totalCarbGoal = user.dailyCarbs + extraCarbs;
+  const totalCarbGoal = dailyCarbGoalBase + extraCarbs;
 
   const [showMacros, setShowMacros] = React.useState(false);
+  const [editing, setEditing] = React.useState<FoodEntry | null>(null);
 
   const groupedEntries = dailyLog.entries.reduce((acc, entry) => {
     if (!acc[entry.meal]) {
@@ -87,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             <TrendingUp size={16} />
-            <span>{user.dailyCalories} kcal/jour</span>
+            <span>{dailyCaloriesGoal} kcal/jour</span>
           </div>
         </div>
       </div>
@@ -99,13 +154,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Calories consommées</p>
               <p className="text-2xl font-bold text-blue-600">
-                {dailyLog.totalCalories.toFixed(0)}
+                {(dailyLog.totalCalories ?? 0).toFixed(0)}
               </p>
               <p className="text-sm text-gray-500">reste {caloriesRemaining.toFixed(0)} / {totalGoal.toFixed(0)}</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full"
-                  style={{ width: `${Math.min((dailyLog.totalCalories / totalGoal) * 100, 100)}%` }}
+                  style={{ width: `${totalGoal > 0 ? Math.min((dailyLog.totalCalories / totalGoal) * 100, 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -120,13 +175,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Protéines</p>
               <p className="text-2xl font-bold text-green-600">
-                {dailyLog.totalProtein.toFixed(0)}g
+                {(dailyLog.totalProtein ?? 0).toFixed(0)}g
               </p>
-              <p className="text-sm text-gray-500">/ {user.dailyProtein}g</p>
+              <p className="text-sm text-gray-500">/ {dailyProteinGoal}g</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${Math.min((dailyLog.totalProtein / user.dailyProtein) * 100, 100)}%` }}
+                  style={{ width: `${dailyProteinGoal > 0 ? Math.min((dailyLog.totalProtein / dailyProteinGoal) * 100, 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -141,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Glucides</p>
               <p className="text-2xl font-bold text-orange-600">
-                {dailyLog.totalCarbs.toFixed(0)}g
+                {(dailyLog.totalCarbs ?? 0).toFixed(0)}g
               </p>
               <p className="text-sm text-gray-500">
                 / {totalCarbGoal.toFixed(0)}g
@@ -152,7 +207,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-orange-500 h-2 rounded-full"
-                  style={{ width: `${Math.min((dailyLog.totalCarbs / totalCarbGoal) * 100, 100)}%` }}
+                  style={{ width: `${totalCarbGoal > 0 ? Math.min((dailyLog.totalCarbs / totalCarbGoal) * 100, 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -167,13 +222,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Lipides</p>
               <p className="text-2xl font-bold text-purple-600">
-                {Math.max(0, dailyLog.totalFat).toFixed(0)}g
+                {Math.max(0, dailyLog.totalFat ?? 0).toFixed(0)}g
               </p>
-              <p className="text-sm text-gray-500">/ {user.dailyFat}g</p>
+              <p className="text-sm text-gray-500">/ {dailyFatGoal}g</p>
               <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-purple-500 h-2 rounded-full"
-                  style={{ width: `${Math.min((dailyLog.totalFat / user.dailyFat) * 100, 100)}%` }}
+                  style={{ width: `${dailyFatGoal > 0 ? Math.min((dailyLog.totalFat / dailyFatGoal) * 100, 100) : 0}%` }}
                 />
               </div>
             </div>
@@ -190,25 +245,27 @@ const Dashboard: React.FC<DashboardProps> = ({
           <CalorieProgress
             consumed={dailyLog.totalCalories}
             burned={stepsCalories}
-            target={user.dailyCalories}
+            target={dailyCaloriesGoal}
             className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
           />
         </div>
         <StepProgress
           current={dailyLog.steps}
-          target={user.stepGoal}
+          target={stepGoal}
           onUpdate={onUpdateSteps}
+          onSync={syncSteps}
+          syncing={isSyncingSteps}
           className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
         />
         <WaterProgress
           current={dailyLog.water}
-          target={user.dailyWater}
+          target={waterGoal}
           onUpdate={onUpdateWater}
           className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
         />
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Poids</p>
-          <p className="text-2xl font-bold mb-2">{user.weight.toFixed(1)} kg</p>
+          <p className="text-2xl font-bold mb-2">{(user.weight ?? 0).toFixed(1)} kg</p>
           <div className="flex flex-wrap justify-center gap-2 mb-2">
             <button onClick={() => onUpdateWeight(-1)} className="px-2 py-1 border rounded">-1</button>
             <button onClick={() => onUpdateWeight(-0.5)} className="px-2 py-1 border rounded">-0.5</button>
@@ -250,7 +307,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <h4 className="font-medium capitalize">{meal}</h4>
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {mealCalories.toFixed(0)} kcal
+                    {(mealCalories ?? 0).toFixed(0)} kcal
                   </span>
                 </div>
                 
@@ -274,14 +331,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <span className="text-sm text-gray-500">{qty}</span>
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                              {entry.calories.toFixed(0)} kcal •
-                              P: {entry.protein.toFixed(0)}g •
-                              G: {entry.carbs.toFixed(0)}g •
-                              L: {entry.fat.toFixed(0)}g
+                              {(entry.calories ?? 0).toFixed(0)} kcal •
+                              P: {(entry.protein ?? 0).toFixed(0)}g •
+                              G: {(entry.carbs ?? 0).toFixed(0)}g •
+                              L: {(entry.fat ?? 0).toFixed(0)}g
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <button
+                              onClick={() => setEditing(entry)}
                               className="p-1 text-gray-500 hover:text-blue-500 transition-colors duration-200"
                               title="Modifier"
                             >
@@ -307,6 +365,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
       {showMacros && (
         <MacroDetailsModal user={user} log={dailyLog} onClose={() => setShowMacros(false)} />
+      )}
+      {editing && (
+        <EditEntryModal
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onSave={(e) => {
+            onUpdateEntry(e);
+            setEditing(null);
+          }}
+        />
       )}
     </div>
   );

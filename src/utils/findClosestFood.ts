@@ -35,3 +35,16 @@ export function findClosestFood<T extends SimpleFood>(query: string, foods: T[])
   if (bestScore <= q.length / 2) return best;
   return null;
 }
+
+export function findClosestFoods<T extends SimpleFood>(
+  query: string,
+  foods: T[],
+  limit = 3
+): { food: T; score: number }[] {
+  const scores = foods.map(f => ({
+    food: f,
+    score: levenshtein(query.toLowerCase(), f.name.toLowerCase()),
+  }));
+  scores.sort((a, b) => a.score - b.score);
+  return scores.slice(0, limit);
+}
