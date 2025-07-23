@@ -366,7 +366,13 @@ function App() {
     }
     rememberRef.current = remember;
     const merged = { ...defaultUser, ...u } as User;
-    const needsProfile = !u.birthDate && !u.age;
+    const needsInfo =
+      !u.birthDate ||
+      !u.heightCm ||
+      !u.weightKg ||
+      !u.activityLevel ||
+      !u.goal ||
+      !u.sex;
     if (!u.dailyCalories) {
       const t = computeDailyTargets(merged);
       merged.dailyCalories = t.calories;
@@ -375,10 +381,10 @@ function App() {
       merged.dailyFat = t.fat;
     }
     setUser(merged);
-    if (isNew) {
+    if (isNew || needsInfo) {
       setCurrentView('onboarding');
     } else {
-      setCurrentView(needsProfile ? 'profile' : 'dashboard');
+      setCurrentView('dashboard');
     }
   };
 

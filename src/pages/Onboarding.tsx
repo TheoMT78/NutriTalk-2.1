@@ -1,142 +1,200 @@
-/* eslint-disable */
 import React, { useState } from 'react';
 import { savePersonalInfo } from '../utils/api';
 
-export default function Onboarding({ userId, onComplete }) {
-  const [step, setStep] = useState(0);
+interface PersonalInfo {
+  userId: string;
+  name: string;
+  birthDate: string;
+  sex: string;
+  height: number;
+  weight: number;
+  activityLevel: string;
+  goal: string;
+}
+
+interface Props {
+  userId: string;
+  onComplete: (info: PersonalInfo) => void;
+}
+
+const days = Array.from({ length: 31 }, (_, i) => i + 1);
+const months = [
+  'Janvier',
+  'Février',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Août',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Décembre'
+];
+const years = Array.from({ length: 2025 - 1920 + 1 }, (_, i) => 1920 + i);
+const heights = Array.from({ length: 81 }, (_, i) => 140 + i); // 140..220
+const weights = Array.from({ length: 161 }, (_, i) => 40 + i); // 40..200
+
+export default function Onboarding({ userId, onComplete }: Props) {
   const [form, setForm] = useState({
     name: '',
-    birthDate: '',
-    sex: 'femme',
-    height: '',
-    weight: '',
-    activityLevel: '0-1',
-    goal: 'maintien',
+    day: 1,
+    month: 'Janvier',
+    year: 2000,
+    sex: 'Homme',
+    height: 175,
+    weight: 70,
+    activityLevel: '1-2 activités/semaine',
+    goal: 'Maintien'
   });
 
-  const fields = [
-    { label: "Comment voulez-vous qu'on vous appelle ?", key: 'name', type: 'text' },
-    { label: 'Quelle est votre date de naissance ?', key: 'birthDate', type: 'date' },
-    { label: 'Quel est votre sexe ?', key: 'sex', type: 'radio', options: ['homme', 'femme'] },
-    { label: 'Quelle est votre taille (cm) ?', key: 'height', type: 'number' },
-    { label: 'Quel est votre poids actuel (kg) ?', key: 'weight', type: 'number' },
-    {
-      label: "Combien d'activités physiques par semaine ?",
-      key: 'activityLevel',
-      type: 'select',
-      options: ['0-1', '1-2', '3-5', '6-7', 'plus de 7'],
-    },
-    {
-      label: 'Quel est votre objectif ?',
-      key: 'goal',
-      type: 'select',
-      options: [
-        'perte modérée (-10%)',
-        'perte légère (-5%)',
-        'maintien (0%)',
-        'prise légère (+5%)',
-        'prise modérée (+10%)',
-      ],
-    },
-  ];
-
-  const current = fields[step];
-
-  const handleChange = (key, value) => {
+  const handleChange = (key: string, value: string | number) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleNext = async () => {
-    if (step < fields.length - 1) {
-      setStep(step + 1);
-    } else {
-      const payload = {
-        userId,
-        name: form.name,
-        birthDate: form.birthDate,
-        sex: form.sex,
-        height: Number(form.height),
-        weight: Number(form.weight),
-        activityLevel: form.activityLevel,
-        goal: form.goal,
-      };
-      try {
-        const saved = await savePersonalInfo(payload);
-        onComplete(saved || payload);
-      } catch (err) {
-        console.error('Failed to save info', err);
-        onComplete(payload);
-      }
+  const handleSubmit = async () => {
+    const monthIndex = months.indexOf(form.month) + 1;
+    const birthDate = `${form.year}-${String(monthIndex).padStart(2, '0')}-${String(form.day).padStart(2, '0')}`;
+    const payload: PersonalInfo = {
+      userId,
+      name: form.name,
+      birthDate,
+      sex: form.sex.toLowerCase(),
+      height: Number(form.height),
+      weight: Number(form.weight),
+      activityLevel: form.activityLevel,
+      goal: form.goal.toLowerCase(),
+    };
+    try {
+      const saved = await savePersonalInfo(payload);
+      onComplete(saved || payload);
+    } catch (err) {
+      console.error('Failed to save info', err);
+      onComplete(payload);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
-      <h2 className="text-xl font-bold text-center">Profil</h2>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium mb-1">{current.label}</label>
-        {current.type === 'text' && (
+    <div className="max-w-md mx-auto p-4 space-y-4 bg-gray-800 text-white rounded-lg">
+      <h2 className="text-xl font-bold text-center">Compléter mon profil</h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block mb-1">Nom d'utilisateur</label>
           <input
             type="text"
-            value={form[current.key]}
-            onChange={e => handleChange(current.key, e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            value={form.name}
+            onChange={e => handleChange('name', e.target.value)}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
           />
-        )}
-        {current.type === 'number' && (
-          <input
-            type="number"
-            value={form[current.key]}
-            onChange={e => handleChange(current.key, e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-        )}
-        {current.type === 'date' && (
-          <input
-            type="date"
-            value={form[current.key]}
-            onChange={e => handleChange(current.key, e.target.value)}
-            className="w-full border rounded px-3 py-2"
-          />
-        )}
-        {current.type === 'radio' && (
-          <div className="space-x-4">
-            {current.options.map(opt => (
-              <label key={opt} className="inline-flex items-center space-x-1">
-                <input
-                  type="radio"
-                  name="sex"
-                  value={opt}
-                  checked={form.sex === opt}
-                  onChange={() => handleChange('sex', opt)}
-                />
-                <span>{opt}</span>
-              </label>
-            ))}
+        </div>
+        <div>
+          <label className="block mb-1">Date de naissance</label>
+          <div className="flex space-x-2">
+            <select
+              value={form.day}
+              onChange={e => handleChange('day', Number(e.target.value))}
+              className="flex-1 px-2 py-2 rounded border border-gray-600 bg-gray-700"
+            >
+              {days.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <select
+              value={form.month}
+              onChange={e => handleChange('month', e.target.value)}
+              className="flex-1 px-2 py-2 rounded border border-gray-600 bg-gray-700"
+            >
+              {months.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={form.year}
+              onChange={e => handleChange('year', Number(e.target.value))}
+              className="flex-1 px-2 py-2 rounded border border-gray-600 bg-gray-700"
+            >
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
-        )}
-        {current.type === 'select' && (
+        </div>
+        <div>
+          <label className="block mb-1">Sexe</label>
           <select
-            value={form[current.key]}
-            onChange={e => handleChange(current.key, e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            value={form.sex}
+            onChange={e => handleChange('sex', e.target.value)}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
           >
-            {current.options.map(opt => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
+            <option>Homme</option>
+            <option>Femme</option>
+            <option>Autre</option>
           </select>
-        )}
+        </div>
+        <div>
+          <label className="block mb-1">Taille (cm)</label>
+          <input
+            list="heights"
+            value={form.height}
+            onChange={e => handleChange('height', Number(e.target.value))}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
+          />
+          <datalist id="heights">
+            {heights.map(h => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <label className="block mb-1">Poids (kg)</label>
+          <input
+            list="weights"
+            value={form.weight}
+            onChange={e => handleChange('weight', Number(e.target.value))}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
+          />
+          <datalist id="weights">
+            {weights.map(w => (
+              <option key={w} value={w}>{w}</option>
+            ))}
+          </datalist>
+        </div>
+        <div>
+          <label className="block mb-1">Activité physique</label>
+          <select
+            value={form.activityLevel}
+            onChange={e => handleChange('activityLevel', e.target.value)}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
+          >
+            <option>0-1 activité/semaine</option>
+            <option>1-2 activités/semaine</option>
+            <option>3-5 activités/semaine</option>
+            <option>6-7 activités/semaine</option>
+            <option>Plus de 7 activités/semaine</option>
+          </select>
+        </div>
+        <div>
+          <label className="block mb-1">Objectif</label>
+          <select
+            value={form.goal}
+            onChange={e => handleChange('goal', e.target.value)}
+            className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
+          >
+            <option>Perte modérée (-10%)</option>
+            <option>Perte légère (-5%)</option>
+            <option>Maintien</option>
+            <option>Prise légère (+5%)</option>
+            <option>Prise modérée (+10%)</option>
+          </select>
+        </div>
       </div>
-      <div className="flex justify-end pt-4">
-        <button
-          onClick={handleNext}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          {step === fields.length - 1 ? 'Terminer' : 'Suivant'}
-        </button>
-      </div>
+      <button
+        onClick={handleSubmit}
+        className="w-full mt-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
+      >
+        Valider
+      </button>
     </div>
   );
 }
