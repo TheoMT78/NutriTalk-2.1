@@ -134,31 +134,27 @@ export default function Onboarding({ userId, onComplete }: Props) {
         </div>
         <div>
           <label className="block mb-1">Taille (cm)</label>
-          <input
-            list="heights"
+          <select
             value={form.height}
             onChange={e => handleChange('height', Number(e.target.value))}
             className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
-          />
-          <datalist id="heights">
+          >
             {heights.map(h => (
               <option key={h} value={h}>{h}</option>
             ))}
-          </datalist>
+          </select>
         </div>
         <div>
           <label className="block mb-1">Poids (kg)</label>
-          <input
-            list="weights"
+          <select
             value={form.weight}
             onChange={e => handleChange('weight', Number(e.target.value))}
             className="w-full px-3 py-2 rounded border border-gray-600 bg-gray-700"
-          />
-          <datalist id="weights">
+          >
             {weights.map(w => (
               <option key={w} value={w}>{w}</option>
             ))}
-          </datalist>
+          </select>
         </div>
         <div>
           <label className="block mb-1">Activité physique</label>

@@ -243,14 +243,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Poids (kg)</label>
-              {isEditing ? (
-                <input
-                  type="number"
-                  step="0.1"
+            {isEditing ? (
+                <select
                   value={formData.weight}
-                  onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, weight: parseInt(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                />
+                >
+                  {Array.from({ length: 161 }, (_, i) => 40 + i).map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
               ) : (
                 <p className="text-gray-700 dark:text-gray-300">{user.weight} kg</p>
               )}
@@ -258,13 +260,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
 
             <div>
               <label className="block text-sm font-medium mb-2">Taille (cm)</label>
-              {isEditing ? (
-                <input
-                  type="number"
+            {isEditing ? (
+                <select
                   value={formData.height}
                   onChange={(e) => setFormData(prev => ({ ...prev, height: parseInt(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                />
+                >
+                  {Array.from({ length: 81 }, (_, i) => 140 + i).map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
               ) : (
                 <p className="text-gray-700 dark:text-gray-300">{user.height} cm</p>
               )}
