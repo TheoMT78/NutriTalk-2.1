@@ -55,7 +55,10 @@ export default function PeriodSelector({
   };
 
   return (
-    <div className={`bg-[#222B3A] rounded-2xl p-4 shadow-lg w-full flex flex-col gap-4 ${className}`}>
+    <div className={`bg-[#222B3A] rounded-2xl p-4 shadow-lg w-full flex flex-col gap-2 ${className}`}>
+      <div className="text-center text-sm font-semibold tracking-wide text-blue-100 mb-1">
+        Période d’analyse
+      </div>
       <div className="flex items-center justify-center gap-2">
         <Calendar className="text-blue-400" size={20} />
         <button className="hover:bg-[#273149] rounded-full p-1 transition" onClick={prevMonth}>
