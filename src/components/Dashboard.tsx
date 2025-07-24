@@ -142,7 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Statistiques principales */}
-      <MacrosRingDashboard />
+      <MacrosRingDashboard user={user} log={dailyLog} />
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
