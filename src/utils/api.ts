@@ -1,17 +1,8 @@
 import { User, DailyLog } from '../types';
 import { safeJson } from './safeJson';
 
-// Use the production backend by default, falling back to localhost during development.
-// Some hosts may set `VITE_API_URL` to the string "undefined" so handle that case
-// to avoid requests like "undefined/api" which lead to empty responses.
-const envUrl = import.meta.env.VITE_API_URL;
-const API =
-  envUrl && envUrl !== 'undefined'
-    ? envUrl
-    : import.meta.env.PROD
-    ? 'https://nutritalk-2-2.onrender.com/api'
-    : 'http://localhost:3001/api';
-
+// Force temporairement l’utilisation du nouveau backend
+const API = 'https://nutritalk-2-2.onrender.com/api';
 export const API_BASE = API;
 
 function readCookie(name: string): string | null {
