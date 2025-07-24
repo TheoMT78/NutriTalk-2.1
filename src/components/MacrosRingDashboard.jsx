@@ -8,6 +8,8 @@ const macroColors = {
 };
 
 function MacroCircle({ percent, color, value, target, label, extra }) {
+  const displayValue = Math.max(0, Math.round(value));
+  const displayTarget = Math.max(0, Math.round(target));
   const strokeDash = `${percent}, 100`;
   return (
     <div className="flex flex-col items-center w-1/3">
@@ -26,10 +28,10 @@ function MacroCircle({ percent, color, value, target, label, extra }) {
           <path
             d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
-            stroke="currentColor"
+            stroke={color}
             strokeWidth="2"
             strokeDasharray={strokeDash}
-            className="text-blue-500 transition-all duration-500"
+            className="transition-all duration-500"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -41,10 +43,10 @@ function MacroCircle({ percent, color, value, target, label, extra }) {
       <div className="mt-1 text-center font-bold">{label}</div>
       <div className="text-center">
         <span className="font-bold text-base md:text-lg">
-          {value.toLocaleString('fr-FR')}g
+          {displayValue.toLocaleString('fr-FR')}g
         </span>
         <span className="text-zinc-400 text-sm">
-          {' '} / {target.toLocaleString('fr-FR')}g
+          {' '} / {displayTarget.toLocaleString('fr-FR')}g
         </span>
       </div>
       <div className="text-xs mt-1 text-center min-h-[16px]">
