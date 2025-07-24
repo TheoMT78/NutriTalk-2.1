@@ -7,59 +7,43 @@ const macroColors = {
   Lipides: "#a783ff",
 };
 
-function MacroRing({
-  label,
-  value,
-  goal,
-  unit = "g",
-  color,
-  bonus,
-  className = "",
-}) {
-  const percent = Math.min(Math.round((value / goal) * 100), 100);
+function MacroCircle({ percent, color, value, target, label, extra }) {
   const data = [
-    { value: percent },
-    { value: 100 - percent }
+    { value: percent, fill: color },
+    { value: 100 - percent, fill: "#242b3b" }
   ];
   return (
-    <div className={`flex flex-col items-center justify-center mb-4 sm:mb-0 sm:mx-4 ${className}`} style={{ minWidth: 110, maxWidth: 140 }}>
-      <PieChart width={100} height={100}>
+    <div className="flex flex-col items-center mx-2 w-24">
+      <PieChart width={64} height={64}>
         <Pie
           data={data}
-          cx="50%"
-          cy="50%"
+          dataKey="value"
           startAngle={90}
           endAngle={-270}
-          innerRadius={38}
-          outerRadius={48}
-          dataKey="value"
+          innerRadius={22}
+          outerRadius={32}
           stroke="none"
         >
-          <Cell key="filled" fill={color} />
-          <Cell key="empty" fill="#232e46" />
+          {data.map((entry, i) => (
+            <Cell key={i} fill={entry.fill} />
+          ))}
         </Pie>
-        {/* Le % au centre */}
         <text
-          x={50}
-          y={54}
+          x={32}
+          y={38}
           textAnchor="middle"
           dominantBaseline="middle"
-          fontSize="22"
-          fontWeight="bold"
+          fontSize={18}
           fill="#fff"
-        >
-          {percent}%
-        </text>
+          fontWeight="bold"
+        >{`${percent}%`}</text>
       </PieChart>
-      {/* Le texte EN DESSOUS */}
-      <div className="text-white text-base font-semibold mt-2">{label}</div>
-      <div className="text-gray-300 text-lg font-bold">
-        {value}{unit}
-        <span className="text-gray-400 font-normal text-base"> / {goal}{unit}</span>
+      <div className="mt-1 text-center font-bold">{label}</div>
+      <div className="text-center">
+        <span className="font-bold text-lg">{value}g</span>
+        <span className="text-zinc-400 text-sm"> / {target}g</span>
       </div>
-      {bonus && label === "Glucides" && (
-        <div className="text-blue-200 text-xs mt-1">{bonus}</div>
-      )}
+      {extra && <div className="text-xs text-blue-300">{extra}</div>}
     </div>
   );
 }
@@ -74,14 +58,17 @@ export default function MacrosRingDashboard({ className = "" }) {
   return (
     <div className={`bg-[#161d2d] rounded-3xl p-4 pt-6 w-full max-w-2xl mx-auto shadow-lg ${className}`}>
       <h2 className="text-2xl font-bold text-white mb-4 text-center">Macronutriments</h2>
-      <div
-        className="
-          flex flex-col items-center w-full
-          sm:flex-row sm:justify-center
-        "
-      >
-        {macros.map((macro) => (
-          <MacroRing key={macro.label} {...macro} />
+      <div className="flex flex-row justify-center items-end w-full">
+        {macros.map((m) => (
+          <MacroCircle
+            key={m.label}
+            percent={Math.round((m.value / m.goal) * 100)}
+            color={m.color}
+            value={m.value}
+            target={m.goal}
+            label={m.label}
+            extra={m.bonus}
+          />
         ))}
       </div>
     </div>
