@@ -25,7 +25,8 @@ npm run update-food-db
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
 En production, l'application pointe par défaut vers
-`https://nutritalk-2-0.onrender.com/api`. Utilisez le fichier `.env.example`
+`https://nutritalk-2-2.onrender.com/api`, la nouvelle URL du backend.
+Utilisez le fichier `.env.example`
 pour créer votre propre `.env` si vous souhaitez cibler un autre serveur ou
 utiliser `localhost` en développement :
 
