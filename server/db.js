@@ -17,6 +17,7 @@ export async function createDb() {
         dbName
       });
       console.log('[db] MongoDB connected', { uri, dbName });
+      console.log('[db] using database', mongoose.connection.name);
     } catch (err) {
       console.error('ÉCHEC DB MongoDB connection', err);
       throw err;

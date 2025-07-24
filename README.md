@@ -47,6 +47,19 @@ Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au 
 `MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 
+### Tester la connexion MongoDB
+
+Un script de test permet de vérifier que vous écrivez bien dans la base
+configurée. Lancez :
+
+```bash
+node scripts/testDbWrite.js
+```
+
+Le script affiche le nom réel de la base puis insère et supprime un utilisateur
+temporaire. S'il n'apparaît rien dans Atlas, vérifiez vos droits d'écriture ou
+l'URI.
+
 ## Mise à jour du profil utilisateur
 
 Pour enregistrer les informations personnelles saisies lors de l'onboarding,
