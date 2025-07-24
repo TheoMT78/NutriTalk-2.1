@@ -22,14 +22,14 @@ function MacroCircle({ percent, color, value, target, label, extra }) {
             d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="3"
             className="text-gray-200 dark:text-gray-700"
           />
           <path
             d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
             stroke={color}
-            strokeWidth="5"
+            strokeWidth="3.5"
             strokeDasharray={strokeDash}
             className="transition-all duration-500"
           />
