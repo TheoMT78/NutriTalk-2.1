@@ -264,6 +264,34 @@ protectedRouter.get('/sync/:userId', async (req, res) => {
 // Utilise le router protégé après les routes publiques
 app.use('/api', protectedRouter);
 
+// PATCH pour update un user (informations perso)
+app.patch('/api/users/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  const updatedUserData = req.body;
+  try {
+    await db.updateUser(userId, updatedUserData);
+    const user = await db.getUserById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error('Failed to update user:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// POST pour synchroniser les pas de l'utilisateur
+app.post('/api/device-sync/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  const { date, steps } = req.body;
+  try {
+    // Ajoute ici la logique pour enregistrer la sync steps en base
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Device sync error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // --- SERVER --- //
 const PORT = process.env.PORT || 3001;
 if (process.env.NODE_ENV !== 'test') {
