@@ -4,6 +4,8 @@ export interface NaiveParsedFood {
   name: string;
 }
 
+import { normalizeFoodName } from './normalizeFoodName';
+
 export function parseFoodsFromInput(text: string): NaiveParsedFood[] {
   const regex = /(\d+(?:[.,]\d+)?)(?:\s?(?:g|gr|grammes?))?\s+(?:de\s+|d['’])?([a-zA-ZéèêàçûîôùœŒ'-]+)/gi;
   const matches = [...text.matchAll(regex)];
@@ -11,6 +13,6 @@ export function parseFoodsFromInput(text: string): NaiveParsedFood[] {
   return matches.map(m => ({
     raw: m[0],
     quantity: parseFloat(m[1].replace(',', '.')),
-    name: m[2].toLowerCase().trim()
+    name: normalizeFoodName(m[2])
   }));
 }

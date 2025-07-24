@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
-import { findClosestFood, findClosestFoods } from '../utils/findClosestFood';
+import { findFoodSmart } from '../utils/findFoodSmart';
+import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
 import { unitWeights } from '../data/unitWeights';
@@ -11,14 +12,6 @@ import { parseFoodsFromInput } from '../utils/parseFoodsFromInput';
 import { detectModificationIntent } from '../utils/detectModification';
 import { Recipe, FoodItem, DailyLog, FoodEntry, ParsedFood } from '../types';
 
-const normalize = (str: string) =>
-  str
-    .toLowerCase()
-    .replace(/œ/g, 'oe')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\p{P}\p{S}]/gu, '')
-    .trim();
 
 interface AIChatProps {
   onClose: () => void;
@@ -126,19 +119,18 @@ const AIChat: React.FC<AIChatProps> = ({
     const notFound: string[] = [];
 
     for (const food of parsed) {
-      const baseName = normalize(food.name);
+      const baseName = normalizeFoodName(food.name);
       const fromKeywords = keywordFoods.find(k =>
-        k.keywords.some(kw => baseName.includes(normalize(kw)))
+        k.keywords.some(kw => baseName.includes(normalizeFoodName(kw)))
       );
       let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
       if (!info) {
-        const cands = findClosestFoods(baseName, fullFoodBase, 2);
-        if (cands.length > 1 && cands[0].score - cands[1].score <= 1) {
-          questions.push(`Tu veux dire ${cands[0].food.name} ou ${cands[1].food.name} ?`);
+        const { food: found, alternatives } = findFoodSmart(baseName, fullFoodBase);
+        if (alternatives.length > 0 && found) {
+          questions.push(`Tu veux dire ${found.name} ou ${alternatives[0].name} ?`);
           continue;
         }
-        const closest = cands[0]?.food || findClosestFood(baseName, fullFoodBase);
-        if (closest) info = closest as FoodItem;
+        if (found) info = found as FoodItem;
       }
       if (!info) {
         const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
@@ -153,7 +145,7 @@ const AIChat: React.FC<AIChatProps> = ({
       const baseAmount = parseFloat(info.unit) || 100;
       let grams = food.quantity;
       if (food.unit === "unite") {
-        const w = unitWeights[normalize(baseName)] || baseAmount;
+        const w = unitWeights[normalizeFoodName(baseName)] || baseAmount;
         grams = food.quantity * w;
       } else if (food.unit === "cas") {
         grams = food.quantity * 15;
@@ -232,7 +224,7 @@ const AIChat: React.FC<AIChatProps> = ({
         const target = dailyLog.entries.find(
           e =>
             e.meal === mod.meal &&
-            normalize(e.name) === normalize(mod.name)
+            normalizeFoodName(e.name) === normalizeFoodName(mod.name)
         );
         clearTimeout(timeout);
         if (target) {
