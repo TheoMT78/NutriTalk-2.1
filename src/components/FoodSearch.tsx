@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Star, X } from 'lucide-react';
+import { Search, Star, X } from 'lucide-react';
+import FoodSearchHeader from './FoodSearchHeader';
 import { FoodItem } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import QRScanner from './QRScanner';
@@ -223,25 +224,10 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Recherche d'aliments</h2>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setShowScanner(true)}
-            className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200"
-          >
-            <Plus size={20} />
-            <span>Scanner</span>
-          </button>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200"
-          >
-            <Plus size={20} />
-            <span>Ajouter un aliment</span>
-          </button>
-        </div>
-      </div>
+      <FoodSearchHeader
+        onScan={() => setShowScanner(true)}
+        onAdd={() => setShowAddForm(true)}
+      />
 
       {/* Sélection du repas */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
