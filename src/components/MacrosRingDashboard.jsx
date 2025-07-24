@@ -1,5 +1,4 @@
 import React from "react";
-import { PieChart, Pie, Cell } from "recharts";
 import { CALORIES_PER_STEP } from "./StepProgress";
 
   const macroColors = {
@@ -9,36 +8,33 @@ import { CALORIES_PER_STEP } from "./StepProgress";
   };
 
   function MacroCircle({ percent, color, value, target, label, extra }) {
-  const data = [
-    { value: percent, fill: color },
-    { value: 100 - percent, fill: "#242b3b" }
-  ];
+    const strokeDash = `${percent}, 100`;
     return (
-      <div className="flex flex-col items-center mx-2 w-24 flex-1">
-        <PieChart width={64} height={64}>
-        <Pie
-          data={data}
-          dataKey="value"
-          startAngle={90}
-          endAngle={-270}
-          innerRadius={22}
-          outerRadius={32}
-          stroke="none"
-        >
-          {data.map((entry, i) => (
-            <Cell key={i} fill={entry.fill} />
-          ))}
-        </Pie>
-        <text
-          x={32}
-          y={38}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={18}
-          fill="#fff"
-          fontWeight="bold"
-        >{`${percent}%`}</text>
-      </PieChart>
+      <div className="flex flex-col items-center w-1/3">
+        <div className="relative w-20 h-20 mx-auto">
+          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+            <path
+              d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-gray-200 dark:text-gray-700"
+            />
+            <path
+              d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeDasharray={strokeDash}
+              className="text-blue-500 transition-all duration-500"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className={`text-lg font-bold`} style={{ color }}>
+              {percent}%
+            </div>
+          </div>
+        </div>
         <div className="mt-1 text-center font-bold">{label}</div>
         <div className="text-center">
           <span className="font-bold text-lg">{value}g</span>
@@ -55,9 +51,26 @@ export default function MacrosRingDashboard({ user, log, className = "" }) {
   const stepsCalories = Math.max(0, log.steps - 4000) * CALORIES_PER_STEP;
   const extraCarbs = Math.floor(stepsCalories / 4);
   const macros = [
-    { label: "Protéines", value: log.totalProtein, goal: user.dailyProtein, color: macroColors.Protéines },
-    { label: "Glucides", value: log.totalCarbs, goal: user.dailyCarbs, color: macroColors.Glucides, bonus: extraCarbs > 0 ? `+${extraCarbs}g après activité` : undefined },
-    { label: "Lipides", value: log.totalFat, goal: user.dailyFat, color: macroColors.Lipides },
+    {
+      label: "Protéines",
+      value: Math.round(log.totalProtein),
+      goal: Math.round(user.dailyProtein),
+      color: macroColors.Protéines,
+    },
+    {
+      label: "Glucides",
+      value: Math.round(log.totalCarbs),
+      goal: Math.round(user.dailyCarbs),
+      color: macroColors.Glucides,
+      bonus:
+        extraCarbs > 0 ? `+${Math.round(extraCarbs)}g après activité` : undefined,
+    },
+    {
+      label: "Lipides",
+      value: Math.round(log.totalFat),
+      goal: Math.round(user.dailyFat),
+      color: macroColors.Lipides,
+    },
   ];
   return (
     <div className={`bg-[#222B3A] rounded-3xl p-4 pt-6 w-full max-w-2xl mx-auto shadow-lg ${className}`}>
