@@ -151,24 +151,24 @@ const Dashboard: React.FC<DashboardProps> = ({
             consumed={dailyLog.totalCalories}
             burned={stepsCalories}
             target={dailyCaloriesGoal}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
           />
         </div>
-        <StepProgress
-          current={dailyLog.steps}
-          target={stepGoal}
-          onUpdate={onUpdateSteps}
-          onSync={syncSteps}
-          syncing={isSyncingSteps}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-        />
-        <WaterProgress
-          current={dailyLog.water}
-          target={waterGoal}
-          onUpdate={onUpdateWater}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-        />
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
+          <StepProgress
+            current={dailyLog.steps}
+            target={stepGoal}
+            onUpdate={onUpdateSteps}
+            onSync={syncSteps}
+            syncing={isSyncingSteps}
+            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+          />
+          <WaterProgress
+            current={dailyLog.water}
+            target={waterGoal}
+            onUpdate={onUpdateWater}
+            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+          />
+          <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md flex flex-col items-center justify-center w-full">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Poids</p>
           <p className="text-2xl font-bold mb-2">{(user.weight ?? 0).toFixed(1)} kg</p>
           <div className="flex flex-wrap justify-center gap-2 mb-2">
@@ -185,8 +185,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
       {/* Journal alimentaire */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl shadow-md">
+        <div className="p-6 border-b border-gray-700">
           <h3 className="text-lg font-semibold">Journal alimentaire</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {new Date(dailyLog.date).toLocaleDateString('fr-FR', { 
