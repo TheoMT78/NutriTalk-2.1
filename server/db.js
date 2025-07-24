@@ -18,15 +18,15 @@ export async function createDb() {
       });
       console.log('[db] MongoDB connected', { uri, dbName });
     } catch (err) {
-      console.error('DB ERROR MongoDB connection', err);
+      console.error('ÉCHEC DB MongoDB connection', err);
       throw err;
     }
 
     const userSchema = new mongoose.Schema(
       {
-        id: { type: String, required: true },
+        id: { type: String, required: true, unique: true },
         name: { type: String, required: true },
-        email: { type: String, required: true },
+        email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         dateOfBirth: { type: String },
         gender: { type: String },
@@ -85,7 +85,7 @@ export async function createDb() {
           });
           return full;
         } catch (err) {
-          console.error('DB ERROR addUser', err);
+          console.error('ÉCHEC DB addUser', err);
           throw err;
         }
       },
@@ -96,7 +96,7 @@ export async function createDb() {
         try {
           const result = await User.updateOne({ id }, { $set: safeData });
           if (!result.matchedCount) {
-            console.error('DB ERROR updateUser no match', { id });
+            console.error('ÉCHEC DB updateUser no match', { id });
           }
           const updated = await User.findOne({ id }).lean();
           console.log('[db] user updated', {
@@ -109,7 +109,7 @@ export async function createDb() {
           });
           return updated;
         } catch (err) {
-          console.error('DB ERROR updateUser', err);
+          console.error('ÉCHEC DB updateUser', err);
           throw err;
         }
       },
@@ -219,7 +219,7 @@ export async function createDb() {
         });
         return low.data.users[idx];
       } else {
-        console.error('DB ERROR updateUser no match (local)', { id });
+        console.error('ÉCHEC DB updateUser no match (local)', { id });
         return undefined;
       }
     },
