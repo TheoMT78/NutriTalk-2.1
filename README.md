@@ -25,7 +25,9 @@ npm run update-food-db
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
 En production, l'application pointe par défaut vers
-`https://nutritalk-2-0.onrender.com/api`. Utilisez le fichier `.env.example`
+`https://nutritalk-2-0.onrender.com/api`, la nouvelle URL du backend.
+La variable `VITE_API_URL` doit être configurée sur cette adresse pour que toutes les requêtes fonctionnent.
+Utilisez le fichier `.env.example`
 pour créer votre propre `.env` si vous souhaitez cibler un autre serveur ou
 utiliser `localhost` en développement :
 
@@ -44,6 +46,19 @@ Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au 
 `MONGODB_URI` permet de stocker toutes les données dans un cluster MongoDB au lieu du fichier `db.json`.
 `MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
+
+### Tester la connexion MongoDB
+
+Un script de test permet de vérifier que vous écrivez bien dans la base
+configurée. Lancez :
+
+```bash
+node scripts/testDbWrite.js
+```
+
+Le script affiche le nom réel de la base puis insère et supprime un utilisateur
+temporaire. S'il n'apparaît rien dans Atlas, vérifiez vos droits d'écriture ou
+l'URI.
 
 ## Mise à jour du profil utilisateur
 

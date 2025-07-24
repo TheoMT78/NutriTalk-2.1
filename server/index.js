@@ -53,6 +53,10 @@ app.post('/api/register',
     }
     try {
       const result = await registerUser(db, req.body);
+      console.log('[api] user registered', {
+        email: result.user.email,
+        id: result.user.id
+      });
       res.json(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed';
@@ -149,6 +153,7 @@ const userUpdateValidators = [
 ];
 
 async function handleUserUpdate(req, res) {
+  console.log('PATCH /users/:id reçu', req.body);
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -156,9 +161,12 @@ async function handleUserUpdate(req, res) {
   }
   try {
     const { password, ...safeBody } = req.body;
-    await db.updateUser(req.params.id, safeBody);
-    const updated = await db.getUserById(req.params.id);
+    const updated = await db.updateUser(req.params.id, safeBody);
     if (!updated) return res.status(404).json({ error: 'User not found' });
+    console.log('[api] user updated', {
+      email: updated.email,
+      id: updated.id
+    });
     const { password: _pw, ...safe } = updated;
     res.json(safe);
   } catch (err) {
@@ -191,7 +199,7 @@ protectedRouter.post('/user/personal-info', async (req, res) => {
       activityLevel,
       goal,
     });
-    await db.updateUser(userId, {
+    const updated = await db.updateUser(userId, {
       name,
       dateOfBirth: birthDate,
       gender: sex,
@@ -204,8 +212,13 @@ protectedRouter.post('/user/personal-info', async (req, res) => {
       dailyCarbs: targets.carbs,
       dailyFat: targets.fat,
     });
-    const updated = await db.getUserById(userId);
-    const { password: _pw2, ...safe } = updated;
+    const { password: _pw2, ...safe } = updated || {};
+    if (updated) {
+      console.log('[api] personal-info saved', {
+        email: updated.email,
+        id: updated.id
+      });
+    }
     res.json(safe);
   } catch (err) {
     console.error('personal-info error', err);
@@ -262,6 +275,20 @@ protectedRouter.get('/sync/:userId', async (req, res) => {
 
 // Utilise le router protégé après les routes publiques
 app.use('/api', protectedRouter);
+
+
+// POST pour synchroniser les pas de l'utilisateur
+app.post('/api/device-sync/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  const { date, steps } = req.body;
+  try {
+    // Ajoute ici la logique pour enregistrer la sync steps en base
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Device sync error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 // --- SERVER --- //
 const PORT = process.env.PORT || 3001;

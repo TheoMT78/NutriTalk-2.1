@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, TrendingUp, Droplets, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
+import { Target, TrendingUp, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
 import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
 import EditEntryModal from './EditEntryModal';
@@ -7,6 +7,7 @@ import StepProgress, { CALORIES_PER_STEP } from './StepProgress';
 import WaterProgress from './WaterProgress';
 import CalorieProgress from './CalorieProgress';
 import WeightChart from './WeightChart';
+import MacrosRingDashboard from './MacrosRingDashboard';
 import { deviceSync } from '../utils/deviceSync';
 import { safeNumber } from '../utils/safeNumber';
 
@@ -42,9 +43,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const dailyCaloriesGoal = safeNumber(user?.dailyCalories);
-  const dailyProteinGoal = safeNumber(user?.dailyProtein);
-  const dailyCarbGoalBase = safeNumber(user?.dailyCarbs);
-  const dailyFatGoal = safeNumber(user?.dailyFat);
   const stepGoal = safeNumber(user?.stepGoal);
   const waterGoal = safeNumber(user?.dailyWater);
 
@@ -101,10 +99,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const stepsCalories = Math.max(0, dailyLog.steps - 4000) * CALORIES_PER_STEP;
-  const totalGoal = dailyCaloriesGoal + stepsCalories;
-  const caloriesRemaining = totalGoal - dailyLog.totalCalories;
-  const extraCarbs = stepsCalories / 4;
-  const totalCarbGoal = dailyCarbGoalBase + extraCarbs;
 
   const [showMacros, setShowMacros] = React.useState(false);
   const [editing, setEditing] = React.useState<FoodEntry | null>(null);
@@ -148,96 +142,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Calories consommées</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {(dailyLog.totalCalories ?? 0).toFixed(0)}
-              </p>
-              <p className="text-sm text-gray-500">reste {caloriesRemaining.toFixed(0)} / {totalGoal.toFixed(0)}</p>
-              <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full"
-                  style={{ width: `${totalGoal > 0 ? Math.min((dailyLog.totalCalories / totalGoal) * 100, 100) : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-              <Target className="text-blue-600 dark:text-blue-400" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Protéines</p>
-              <p className="text-2xl font-bold text-green-600">
-                {(dailyLog.totalProtein ?? 0).toFixed(0)}g
-              </p>
-              <p className="text-sm text-gray-500">/ {dailyProteinGoal}g</p>
-              <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${dailyProteinGoal > 0 ? Math.min((dailyLog.totalProtein / dailyProteinGoal) * 100, 100) : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-              <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Glucides</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {(dailyLog.totalCarbs ?? 0).toFixed(0)}g
-              </p>
-              <p className="text-sm text-gray-500">
-                / {totalCarbGoal.toFixed(0)}g
-              </p>
-              {extraCarbs > 0 && (
-                <p className="text-xs text-gray-500">+{extraCarbs.toFixed(0)}g après activité</p>
-              )}
-              <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-orange-500 h-2 rounded-full"
-                  style={{ width: `${totalCarbGoal > 0 ? Math.min((dailyLog.totalCarbs / totalCarbGoal) * 100, 100) : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-              <Apple className="text-orange-600 dark:text-orange-400" size={20} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Lipides</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {Math.max(0, dailyLog.totalFat ?? 0).toFixed(0)}g
-              </p>
-              <p className="text-sm text-gray-500">/ {dailyFatGoal}g</p>
-              <div className="mt-1 w-2/3 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-purple-500 h-2 rounded-full"
-                  style={{ width: `${dailyFatGoal > 0 ? Math.min((dailyLog.totalFat / dailyFatGoal) * 100, 100) : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-              <Droplets className="text-purple-600 dark:text-purple-400" size={20} />
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacrosRingDashboard user={user} log={dailyLog} />
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

@@ -83,18 +83,27 @@ export default function Onboarding({ userId, onComplete }: Props) {
       goal: form.goal,
     };
     try {
-    const saved = await savePersonalInfo({
-      userId,
-      name: form.name,
-      birthDate: dateOfBirth,
-      sex: form.sex,
-      height: Number(form.height),
-      weight: Number(form.weight),
-      activityLevel: form.activityLevel,
-      goal: form.goal,
-    });
+      console.log('Payload envoyé à updateUserInfo', {
+        name: form.name,
+        dateOfBirth,
+        gender: form.sex,
+        height: Number(form.height),
+        weight: Number(form.weight),
+        activityLevel: form.activityLevel,
+        goal: form.goal,
+      });
+      const saved = await updateUserInfo(userId, {
+        name: form.name,
+        dateOfBirth,
+        gender: form.sex,
+        height: Number(form.height),
+        weight: Number(form.weight),
+        activityLevel: form.activityLevel,
+        goal: form.goal,
+      });
       onComplete((saved || payload) as Partial<PersonalInfo>);
     } catch (err) {
+      if (err instanceof Error) alert(err.message);
       console.error('Failed to save info', err);
       onComplete(payload);
     }

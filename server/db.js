@@ -8,7 +8,7 @@ export async function createDb() {
   const uri = process.env.MONGODB_URI && process.env.MONGODB_URI.trim();
   if (uri) {
     const dbName = process.env.MONGODB_DBNAME || 'nutritalk';
-    console.log('[db] connecting to MongoDB', { dbName });
+    console.log('[db] connecting to MongoDB', { uri, dbName });
 
     try {
       await mongoose.connect(uri, {
@@ -16,17 +16,18 @@ export async function createDb() {
         useUnifiedTopology: true,
         dbName
       });
-      console.log('[db] MongoDB connected to', dbName);
+      console.log('[db] MongoDB connected', { uri, dbName });
+      console.log('[db] using database', mongoose.connection.name);
     } catch (err) {
-      console.error('[db] MongoDB connection error', err);
+      console.error('ÉCHEC DB MongoDB connection', err);
       throw err;
     }
 
     const userSchema = new mongoose.Schema(
       {
-        id: { type: String, required: true },
+        id: { type: String, required: true, unique: true },
         name: { type: String, required: true },
-        email: { type: String, required: true },
+        email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         dateOfBirth: { type: String },
         gender: { type: String },
@@ -74,10 +75,18 @@ export async function createDb() {
         console.log('[db] addUser', { email: user.email });
         try {
           const doc = await User.create(user);
-          console.log('[db] insert success', doc._id);
-          return doc;
+          const full = doc.toObject();
+          console.log('[db] user created', {
+            email: full.email,
+            id: full.id,
+            user: full,
+            uri,
+            collection: User.collection.name,
+            dbName
+          });
+          return full;
         } catch (err) {
-          console.error('[db] insert error', err);
+          console.error('ÉCHEC DB addUser', err);
           throw err;
         }
       },
@@ -85,7 +94,25 @@ export async function createDb() {
       async updateUser(id, data) {
         // NE JAMAIS mettre à jour le password ici !
         const { password, ...safeData } = data;
-        await User.updateOne({ id }, { $set: safeData });
+        try {
+          const result = await User.updateOne({ id }, { $set: safeData });
+          if (!result.matchedCount) {
+            console.error('ÉCHEC DB updateUser no match', { id });
+          }
+          const updated = await User.findOne({ id }).lean();
+          console.log('[db] user updated', {
+            id,
+            email: updated && updated.email,
+            user: updated,
+            uri,
+            collection: User.collection.name,
+            dbName
+          });
+          return updated;
+        } catch (err) {
+          console.error('ÉCHEC DB updateUser', err);
+          throw err;
+        }
       },
       async getUserById(id) {
         return User.findOne({ id }).lean();
@@ -169,6 +196,13 @@ export async function createDb() {
       console.log('[db] addUser (local)', { email: user.email });
       low.data.users.push(user);
       await low.write();
+      console.log('[db] user created (local)', {
+        email: user.email,
+        id: user.id,
+        user,
+        dbFile
+      });
+      return user;
     },
     // PATCH SÉCURITÉ aussi pour mode fichier JSON
     async updateUser(id, data) {
@@ -178,6 +212,16 @@ export async function createDb() {
         const { password, ...safeData } = data;
         low.data.users[idx] = { ...low.data.users[idx], ...safeData };
         await low.write();
+        console.log('[db] user updated (local)', {
+          id,
+          email: low.data.users[idx].email,
+          user: low.data.users[idx],
+          dbFile
+        });
+        return low.data.users[idx];
+      } else {
+        console.error('ÉCHEC DB updateUser no match (local)', { id });
+        return undefined;
       }
     },
     async getUserById(id) {
