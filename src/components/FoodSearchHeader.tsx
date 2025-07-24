@@ -8,23 +8,25 @@ interface FoodSearchHeaderProps {
 
 export default function FoodSearchHeader({ onScan, onAdd }: FoodSearchHeaderProps) {
   return (
-    <div className="bg-[#181e27] rounded-2xl p-5 mb-6 shadow-lg flex flex-col items-center w-full">
-      <h1 className="text-3xl font-bold text-white text-center">Recherche d’aliments</h1>
-      <div className="w-14 border-b-2 border-blue-500 my-2 mx-auto" />
-      <div className="flex gap-4 w-full mt-4 flex-wrap">
+    <div className="bg-[#222B3A] rounded-2xl p-4 mb-4 shadow flex flex-col items-center w-full max-w-[370px] mx-auto">
+      <div className="w-full flex flex-col items-center mb-2">
+        <span className="text-lg font-bold text-white tracking-tight mb-1">
+          Recherche d'aliments
+        </span>
+        <div className="h-1 w-10 rounded-full bg-blue-500 opacity-60 mb-1" />
+      </div>
+      <div className="flex w-full gap-3">
         <button
-          className="flex items-center justify-center flex-1 min-w-[160px] bg-[#22b573] text-white text-base rounded-xl py-3 font-semibold shadow hover:bg-[#28c77c] transition"
           onClick={onScan}
+          className="flex-1 flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-medium rounded-lg py-2 transition text-sm shadow"
         >
-          <QrCode size={22} className="mr-2" />
-          Scanner
+          <QrCode size={20} className="mr-2" /> Scanner
         </button>
         <button
-          className="flex items-center justify-center flex-1 min-w-[160px] bg-[#3086ff] text-white text-base rounded-xl py-3 font-semibold shadow hover:bg-[#399eff] transition"
           onClick={onAdd}
+          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-lg py-2 transition text-sm shadow"
         >
-          <Plus size={22} className="mr-2" />
-          Ajouter un aliment
+          <Plus size={20} className="mr-2" /> Ajouter un aliment
         </button>
       </div>
     </div>

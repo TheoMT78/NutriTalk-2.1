@@ -230,7 +230,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       />
 
       {/* Sélection du repas */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <h3 className="text-lg font-semibold mb-4">Repas</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {(['petit-déjeuner', 'déjeuner', 'dîner', 'collation'] as const).map((meal) => (
@@ -250,7 +250,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       </div>
 
       {/* Filtres */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Recherche */}
           <div className="flex-1 relative">
@@ -292,7 +292,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       </div>
 
       {/* Liste des aliments */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl shadow-md">
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">
             Aliments ({filteredFoods.length})
@@ -376,7 +376,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       {/* Formulaire d'ajout d'aliment personnalisé */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+          <div className="bg-[#222B3A] rounded-2xl p-6 w-full max-w-md shadow-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Ajouter un aliment personnalisé</h3>
               <button
