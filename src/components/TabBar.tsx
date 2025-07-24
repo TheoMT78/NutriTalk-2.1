@@ -4,10 +4,9 @@ import { Home, Search, BookOpen, BarChart3, UserCircle } from 'lucide-react';
 interface TabBarProps {
   currentView: string;
   onViewChange: (view: string) => void;
-  isDarkMode: boolean;
 }
 
-const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange, isDarkMode }) => {
+const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange }) => {
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'search', label: 'Recherche', icon: Search },
@@ -18,9 +17,7 @@ const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange, isDarkMode }
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-40 md:hidden border-t ${
-        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A]"
     >
       <nav className="flex justify-around py-2">
         {navItems.map(item => {

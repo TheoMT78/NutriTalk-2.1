@@ -504,11 +504,7 @@ function App() {
       </main>
 
       {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && (
-        <TabBar
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          isDarkMode={isDarkMode}
-        />
+        <TabBar currentView={currentView} onViewChange={setCurrentView} />
       )}
 
       {currentView === 'dashboard' && (
