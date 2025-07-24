@@ -53,6 +53,10 @@ app.post('/api/register',
     }
     try {
       const result = await registerUser(db, req.body);
+      console.log('[api] user registered', {
+        email: result.user.email,
+        id: result.user.id
+      });
       res.json(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed';
@@ -157,9 +161,12 @@ async function handleUserUpdate(req, res) {
   }
   try {
     const { password, ...safeBody } = req.body;
-    await db.updateUser(req.params.id, safeBody);
-    const updated = await db.getUserById(req.params.id);
+    const updated = await db.updateUser(req.params.id, safeBody);
     if (!updated) return res.status(404).json({ error: 'User not found' });
+    console.log('[api] user updated', {
+      email: updated.email,
+      id: updated.id
+    });
     const { password: _pw, ...safe } = updated;
     res.json(safe);
   } catch (err) {
@@ -192,7 +199,7 @@ protectedRouter.post('/user/personal-info', async (req, res) => {
       activityLevel,
       goal,
     });
-    await db.updateUser(userId, {
+    const updated = await db.updateUser(userId, {
       name,
       dateOfBirth: birthDate,
       gender: sex,
@@ -205,8 +212,13 @@ protectedRouter.post('/user/personal-info', async (req, res) => {
       dailyCarbs: targets.carbs,
       dailyFat: targets.fat,
     });
-    const updated = await db.getUserById(userId);
-    const { password: _pw2, ...safe } = updated;
+    const { password: _pw2, ...safe } = updated || {};
+    if (updated) {
+      console.log('[api] personal-info saved', {
+        email: updated.email,
+        id: updated.id
+      });
+    }
     res.json(safe);
   } catch (err) {
     console.error('personal-info error', err);
@@ -264,20 +276,6 @@ protectedRouter.get('/sync/:userId', async (req, res) => {
 // Utilise le router protégé après les routes publiques
 app.use('/api', protectedRouter);
 
-// PATCH pour update un user (informations perso)
-app.patch('/api/users/:userId', async (req, res) => {
-  const userId = req.params.userId;
-  const updatedUserData = req.body;
-  try {
-    await db.updateUser(userId, updatedUserData);
-    const user = await db.getUserById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
-  } catch (err) {
-    console.error('Failed to update user:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
 
 // POST pour synchroniser les pas de l'utilisateur
 app.post('/api/device-sync/:userId', async (req, res) => {
