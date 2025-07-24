@@ -153,6 +153,48 @@ app.get('/scrape-nutrition', async (req, res) => {
   }
 });
 
+// Fallback nutrition analysis via Gemini/OpenRouter
+app.post('/api/gemini-nutrition', async (req, res) => {
+  const { description } = req.body || {};
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return res.status(500).json({ error: 'Clé API Gemini manquante' });
+  if (!description) return res.status(400).json({ error: 'Description requise' });
+  try {
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-pro',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Tu es un expert en nutrition, tu analyses chaque aliment précisément, même les marques ou produits spécialisés.'
+          },
+          {
+            role: 'user',
+            content:
+              `Donne-moi précisément les valeurs nutritionnelles (calories, protéines, glucides, lipides) pour : ${description}. Si c’est une marque connue (MyProtein, Prozis, etc.), cherche la fiche officielle ou utilise tes connaissances à jour.`
+          }
+        ]
+      })
+    });
+    if (!resp.ok) {
+      console.error('Gemini API error', await resp.text());
+      return res.status(500).json({ error: 'Erreur Gemini/Google AI' });
+    }
+    const data = await resp.json();
+    const geminiText = data.choices?.[0]?.message?.content || 'Aucune donnée trouvée';
+    res.json({ result: geminiText });
+  } catch (e) {
+    console.error('[Gemini fallback error]', e);
+    res.status(500).json({ error: 'Erreur Gemini/Google AI' });
+  }
+});
+
 // --- ROUTES PROTÉGÉES --- //
 
 const protectedRouter = express.Router();

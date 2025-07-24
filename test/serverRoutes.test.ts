@@ -11,6 +11,7 @@ const dbPath = path.join(__dirname, 'test-db.json');
 process.env.DB_FILE = dbPath;
 process.env.GOOGLE_API_KEY = 'key';
 process.env.GOOGLE_CSE_ID = 'cx';
+process.env.OPENROUTER_API_KEY = 'token';
 
 const { default: app } = await import('../server/index.js');
 
@@ -148,6 +149,31 @@ test('scrape nutrition returns data', async () => {
     .get('/scrape-nutrition?url=' + encodeURIComponent('http://food.com') + '&name=test')
     .expect(200);
   assert.deepEqual(res.body, { name: 'test', calories: 100, protein: 10, carbs: 20, fat: 5 });
+  global.fetch = realFetch;
+});
+
+test('gemini nutrition returns data', async () => {
+  const realFetch = global.fetch;
+  let called = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  global.fetch = async (url: string, options?: Record<string, unknown>) => {
+    if (url === 'https://openrouter.ai/api/v1/chat/completions') {
+      called = true;
+      return {
+        ok: true,
+        async json() {
+          return { choices: [{ message: { content: '100 kcal 10 g protein' } }] };
+        }
+      } as unknown as Response;
+    }
+    return { ok: false, json: async () => ({}) } as unknown as Response;
+  };
+  const res = await request(app)
+    .post('/api/gemini-nutrition')
+    .send({ description: 'test' });
+  assert.equal(res.statusCode, 200);
+  assert.equal(called, true);
+  assert.deepEqual(res.body, { result: '100 kcal 10 g protein' });
   global.fetch = realFetch;
 });
 
