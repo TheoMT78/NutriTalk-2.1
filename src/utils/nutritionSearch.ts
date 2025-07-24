@@ -1,5 +1,19 @@
 import { searchProductFallback } from './openFoodFacts';
 import { safeJson } from './safeJson';
+import { API_BASE } from './api';
+
+async function scrapeNutritionFromUrl(url: string, name: string): Promise<NutritionInfo | null> {
+  const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
+  try {
+    const res = await fetch(`${base}/scrape-nutrition?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`);
+    if (!res.ok) return null;
+    const data = await safeJson<NutritionInfo>(res);
+    return data || null;
+  } catch (e) {
+    console.error('scrapeNutritionFromUrl error', e);
+    return null;
+  }
+}
 
 function extractNutrition(text: string) {
   const cals = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calories?)/i);
@@ -150,11 +164,11 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
           const title: string = item.title || query;
           const nut = extractNutrition(text);
           if (nut.calories || nut.protein || nut.carbs || nut.fat) {
-            return {
-              name: title,
-              ...nut,
-              unit: '100g'
-            };
+            return { name: title, ...nut, unit: '100g' };
+          }
+          if (item.link) {
+            const scraped = await scrapeNutritionFromUrl(item.link, title);
+            if (scraped) return scraped;
           }
         }
       }

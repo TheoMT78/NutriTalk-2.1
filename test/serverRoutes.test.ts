@@ -131,6 +131,26 @@ test('search nutrition returns results', async () => {
   ]);
 });
 
+test('scrape nutrition returns data', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url: string) => {
+    if (url === 'http://food.com') {
+      return {
+        ok: true,
+        async text() {
+          return '<html><body>100 kcal 10 g protein 20g carbohydrates 5 g fat</body></html>';
+        }
+      } as unknown as Response;
+    }
+    return { ok: false, text: async () => '' } as unknown as Response;
+  };
+  const res = await request(app)
+    .get('/scrape-nutrition?url=' + encodeURIComponent('http://food.com') + '&name=test')
+    .expect(200);
+  assert.deepEqual(res.body, { name: 'test', calories: 100, protein: 10, carbs: 20, fat: 5 });
+  global.fetch = realFetch;
+});
+
 test('deviceSync stores steps', async () => {
   const register = await request(app)
     .post('/api/register')
