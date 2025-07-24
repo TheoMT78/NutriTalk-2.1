@@ -2,7 +2,7 @@ import { User, DailyLog } from '../types';
 import { safeJson } from './safeJson';
 
 // Force temporairement l'utilisation du nouveau backend
-const API = 'https://nutritalk-2-0.onrender.com/api';
+const API = 'https://nutritalk-2-2.onrender.com/api';
 export const API_BASE = API;
 
 function readCookie(name: string): string | null {

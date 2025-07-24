@@ -7,7 +7,6 @@ import History from './components/History';
 import Recipes from './components/Recipes';
 import Onboarding from './pages/Onboarding';
 import AIChat from './components/AIChat';
-import FloatingAIButton from './components/FloatingAIButton';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -450,12 +449,7 @@ function App() {
           <Dashboard
             user={user}
             dailyLog={dailyLog}
-            onRemoveEntry={removeFoodEntry}
-            onUpdateEntry={updateFoodEntry}
-            onUpdateWater={updateWater}
-            onUpdateSteps={updateSteps}
-            onUpdateWeight={updateWeight}
-            weightHistory={weightHistory}
+            onAssistantClick={() => setIsAIChatOpen(true)}
           />
         );
       case 'search':
@@ -471,12 +465,7 @@ function App() {
           <Dashboard
             user={user}
             dailyLog={dailyLog}
-            onRemoveEntry={removeFoodEntry}
-            onUpdateEntry={updateFoodEntry}
-            onUpdateWater={updateWater}
-            onUpdateSteps={updateSteps}
-            onUpdateWeight={updateWeight}
-            weightHistory={weightHistory}
+            onAssistantClick={() => setIsAIChatOpen(true)}
           />
         );
     }
@@ -486,7 +475,7 @@ function App() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && (
+      {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && currentView !== 'dashboard' && (
         <Header
           currentView={currentView}
           onViewChange={setCurrentView}
@@ -502,19 +491,14 @@ function App() {
         {renderView()}
       </main>
 
-      {currentView === 'dashboard' && (
-        <>
-          <FloatingAIButton onClick={() => setIsAIChatOpen(true)} />
-          {isAIChatOpen && (
-            <AIChat
-              onClose={() => setIsAIChatOpen(false)}
-              onAddFood={addFoodEntry}
-              onUpdateEntry={updateFoodEntry}
-              dailyLog={dailyLog}
-              isDarkMode={isDarkMode}
-            />
-          )}
-        </>
+      {isAIChatOpen && (
+        <AIChat
+          onClose={() => setIsAIChatOpen(false)}
+          onAddFood={addFoodEntry}
+          onUpdateEntry={updateFoodEntry}
+          dailyLog={dailyLog}
+          isDarkMode={isDarkMode}
+        />
       )}
     </div>
   );
