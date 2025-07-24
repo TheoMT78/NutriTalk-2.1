@@ -29,7 +29,7 @@ function MacroCircle({ percent, color, value, target, label, extra }) {
             d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
             stroke={color}
-            strokeWidth="2"
+            strokeWidth="5"
             strokeDasharray={strokeDash}
             className="transition-all duration-500"
           />
