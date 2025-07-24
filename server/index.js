@@ -149,6 +149,7 @@ const userUpdateValidators = [
 ];
 
 async function handleUserUpdate(req, res) {
+  console.log('PATCH /users/:id reçu', req.body);
   if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
