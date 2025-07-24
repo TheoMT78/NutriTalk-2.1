@@ -9,7 +9,7 @@ const API =
   envUrl && envUrl !== 'undefined'
     ? envUrl
     : import.meta.env.PROD
-    ? 'https://nutritalk-2-0.onrender.com/api'
+    ? 'https://nutritalk-2-2.onrender.com/api'
     : 'http://localhost:3001/api';
 
 export const API_BASE = API;
