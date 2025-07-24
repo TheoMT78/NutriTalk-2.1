@@ -8,6 +8,7 @@ import Recipes from './components/Recipes';
 import Onboarding from './pages/Onboarding';
 import AIChat from './components/AIChat';
 import FloatingAIButton from './components/FloatingAIButton';
+import TabBar from './components/TabBar';
 import SplashScreen from './components/SplashScreen';
 import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -501,6 +502,14 @@ function App() {
       <main className="container mx-auto px-4 py-6 pb-20">
         {renderView()}
       </main>
+
+      {currentView !== 'auth' && currentView !== 'splash' && currentView !== 'onboarding' && (
+        <TabBar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          isDarkMode={isDarkMode}
+        />
+      )}
 
       {currentView === 'dashboard' && (
         <>
