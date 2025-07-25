@@ -11,6 +11,22 @@ import { createDb } from './db.js';
 import createDeviceSyncRouter from './deviceSync.js';
 import { computeDailyTargets } from './nutrition.js';
 
+const GEMINI_PROMPT = `
+Tu es un assistant nutritionnel expert. Pour chaque phrase reçue, tu analyses les aliments, quantités et marques si présentes.
+Si tu connais la marque (ex : MyProtein, Prozis, Gerblé, Bjorg…), tu recherches la fiche nutritionnelle sur Internet ou sur les sites officiels, et tu donnes la valeur la plus précise possible.
+
+Rends la réponse sous ce format en français :
+1. **Nom de l'aliment** (quantité, marque si présente)
+- Calories : XXX kcal
+- Protéines : XX g
+- Glucides : XX g
+- Lipides : XX g
+
+**Total** : ... (récapitule tous les aliments si plusieurs)
+Si tu ne sais pas, indique : “Aucune donnée fiable trouvée pour : [aliment]”
+Si la quantité est ambigüe, propose une estimation raisonnable.
+`;
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -169,16 +185,8 @@ app.post('/api/gemini-nutrition', async (req, res) => {
       body: JSON.stringify({
         model: 'google/gemini-pro',
         messages: [
-          {
-            role: 'system',
-            content:
-              'Tu es un expert en nutrition, tu analyses chaque aliment précisément, même les marques ou produits spécialisés.'
-          },
-          {
-            role: 'user',
-            content:
-              `Donne-moi précisément les valeurs nutritionnelles (calories, protéines, glucides, lipides) pour : ${description}. Si c’est une marque connue (MyProtein, Prozis, etc.), cherche la fiche officielle ou utilise tes connaissances à jour.`
-          }
+          { role: 'system', content: GEMINI_PROMPT },
+          { role: 'user', content: description }
         ]
       })
     });
