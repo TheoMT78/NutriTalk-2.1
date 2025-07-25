@@ -176,26 +176,29 @@ app.post('/api/gemini-nutrition', async (req, res) => {
   if (!key) return res.status(500).json({ error: 'API key not set' });
   if (!description) return res.status(400).json({ error: 'Description requise' });
   try {
+    const body = {
+      model: 'google/gemini-pro',
+      messages: [
+        { role: 'system', content: GEMINI_PROMPT },
+        { role: 'user', content: description }
+      ],
+      web_search: true
+    };
+    console.log('Gemini Request:', body);
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model: 'google/gemini-pro',
-        messages: [
-          { role: 'system', content: GEMINI_PROMPT },
-          { role: 'user', content: description }
-        ],
-        web_search: true
-      })
+      body: JSON.stringify(body)
     });
     if (!resp.ok) {
       console.error('Gemini API error', await resp.text());
       return res.status(500).json({ error: 'Erreur Gemini/Google AI' });
     }
     const data = await resp.json();
+    console.log('Gemini Response:', data);
     const geminiText = data.choices?.[0]?.message?.content || 'Aucune donnée trouvée';
     res.json({ result: geminiText });
   } catch (e) {
