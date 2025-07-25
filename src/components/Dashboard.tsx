@@ -125,31 +125,31 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div onClick={() => setShowMacros(true)} className="cursor-pointer">
-          <CalorieProgress
-            consumed={dailyLog.totalCalories}
-            burned={stepsCalories}
-            target={dailyCaloriesGoal}
-            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
-          />
-        </div>
-          <StepProgress
-            current={dailyLog.steps}
-            target={stepGoal}
-            onUpdate={onUpdateSteps}
-            onSync={syncSteps}
-            syncing={isSyncingSteps}
-            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
-          />
-          <WaterProgress
-            current={dailyLog.water}
-            target={waterGoal}
-            onUpdate={onUpdateWater}
-            className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
-          />
-          <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md flex flex-col items-center justify-center w-full">
+      <div onClick={() => setShowMacros(true)} className="cursor-pointer">
+        <CalorieProgress
+          consumed={dailyLog.totalCalories}
+          burned={stepsCalories}
+          target={dailyCaloriesGoal}
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+        />
+      </div>
+      <MacrosRingDashboard user={user} log={dailyLog} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <StepProgress
+          current={dailyLog.steps}
+          target={stepGoal}
+          onUpdate={onUpdateSteps}
+          onSync={syncSteps}
+          syncing={isSyncingSteps}
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+        />
+        <WaterProgress
+          current={dailyLog.water}
+          target={waterGoal}
+          onUpdate={onUpdateWater}
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+        />
+        <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md flex flex-col items-center justify-center w-full">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Poids</p>
           <p className="text-2xl font-bold mb-2">{(user.weight ?? 0).toFixed(1)} kg</p>
           <div className="flex flex-wrap justify-center gap-2 mb-2">
@@ -163,9 +163,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           <WeightChart data={weightHistory.slice(-7)} />
         </div>
       </div>
-
-      {/* Statistiques principales */}
-      <MacrosRingDashboard user={user} log={dailyLog} />
 
 
       {/* Journal alimentaire */}
