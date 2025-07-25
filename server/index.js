@@ -187,7 +187,8 @@ app.post('/api/gemini-nutrition', async (req, res) => {
         messages: [
           { role: 'system', content: GEMINI_PROMPT },
           { role: 'user', content: description }
-        ]
+        ],
+        web_search: true
       })
     });
     if (!resp.ok) {
