@@ -3,6 +3,7 @@ import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition, geminiAnalyzeText } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
 import { findFoodSmart } from '../utils/findFoodSmart';
+import { shouldUseGemini } from "../utils/shouldUseGemini";
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
@@ -266,6 +267,28 @@ const AIChat: React.FC<AIChatProps> = ({
         setIsLoading(false);
         return;
       }
+
+      if (shouldUseGemini(input, fullFoodBase)) {
+        const gem = await geminiAnalyzeText(input);
+        const text = gem ||
+          'Aucun resultat trouve, merci d\u2019ajouter les valeurs a la main.';
+        clearTimeout(timeout);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: text,
+            timestamp: new Date(),
+            fromGemini: true
+          }
+        ]);
+        setIsLoading(false);
+        setInput('');
+        voiceResultRef.current = '';
+        return;
+      }
+
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
 
