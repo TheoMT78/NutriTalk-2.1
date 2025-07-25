@@ -177,12 +177,13 @@ app.post('/api/gemini-nutrition', async (req, res) => {
   if (!description) return res.status(400).json({ error: 'Description requise' });
   try {
     const body = {
-      model: 'google/gemini-pro',
+      model: 'google/gemini-2.0-flash',
       messages: [
         { role: 'system', content: GEMINI_PROMPT },
         { role: 'user', content: description }
       ],
-      web_search: true
+      web_search: true,
+      web_access: true
     };
     console.log('Gemini Request:', body);
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -199,6 +200,9 @@ app.post('/api/gemini-nutrition', async (req, res) => {
     }
     const data = await resp.json();
     console.log('Gemini Response:', data);
+    if (data.error) {
+      return res.status(500).json({ error: `Erreur Gemini: ${data.error.message || 'unknown'}` });
+    }
     const geminiText = data.choices?.[0]?.message?.content || 'Aucune donnée trouvée';
     res.json({ result: geminiText });
   } catch (e) {

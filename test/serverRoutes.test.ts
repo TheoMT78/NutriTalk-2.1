@@ -176,6 +176,8 @@ test('gemini nutrition returns data', async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(called, true);
   assert.equal(body.web_search, true);
+  assert.equal(body.web_access, true);
+  assert.equal(body.model, 'google/gemini-2.0-flash');
   assert.deepEqual(res.body, { result: '100 kcal 10 g protein' });
   global.fetch = realFetch;
 });
