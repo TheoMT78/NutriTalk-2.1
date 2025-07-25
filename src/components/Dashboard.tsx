@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, TrendingUp, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
+import { Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
 import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
 import EditEntryModal from './EditEntryModal';
@@ -125,25 +125,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header avec message de motivation */}
-      <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Bonjour {user.name} !</h2>
-        <p className="text-blue-100 mb-4">{getGoalMessage()}</p>
-        <div className="flex items-center space-x-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <Target size={16} />
-            <span>Objectif: {user.goal}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <TrendingUp size={16} />
-            <span>{dailyCaloriesGoal} kcal/jour</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques principales */}
-      <MacrosRingDashboard user={user} log={dailyLog} />
-
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div onClick={() => setShowMacros(true)} className="cursor-pointer">
@@ -182,6 +163,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           <WeightChart data={weightHistory.slice(-7)} />
         </div>
       </div>
+
+      {/* Statistiques principales */}
+      <MacrosRingDashboard user={user} log={dailyLog} />
 
 
       {/* Journal alimentaire */}
