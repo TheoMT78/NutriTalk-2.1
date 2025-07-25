@@ -11,6 +11,22 @@ import { createDb } from './db.js';
 import createDeviceSyncRouter from './deviceSync.js';
 import { computeDailyTargets } from './nutrition.js';
 
+const GEMINI_PROMPT = `
+Tu es un assistant nutritionnel expert. Pour chaque phrase reçue, tu analyses les aliments, quantités et marques si présentes.
+Si tu connais la marque (ex : MyProtein, Prozis, Gerblé, Bjorg…), tu recherches la fiche nutritionnelle sur Internet ou sur les sites officiels, et tu donnes la valeur la plus précise possible.
+
+Rends la réponse sous ce format en français :
+1. **Nom de l'aliment** (quantité, marque si présente)
+- Calories : XXX kcal
+- Protéines : XX g
+- Glucides : XX g
+- Lipides : XX g
+
+**Total** : ... (récapitule tous les aliments si plusieurs)
+Si tu ne sais pas, indique : “Aucune donnée fiable trouvée pour : [aliment]”
+Si la quantité est ambigüe, propose une estimation raisonnable.
+`;
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -112,6 +128,86 @@ app.get('/search-nutrition', async (req, res) => {
   } catch (err) {
     console.error('search-nutrition error', err);
     res.status(500).json({ error: 'Échec recherche Google' });
+  }
+});
+
+// Récupère et analyse la première page trouvée
+import { load } from 'cheerio';
+
+app.get('/scrape-nutrition', async (req, res) => {
+  const url = req.query.url;
+  const name = req.query.name || '';
+  if (!url) return res.status(400).json({ error: 'Missing url' });
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error('scrape fetch failed', resp.status, resp.statusText);
+      return res.status(500).json({ error: 'fetch failed' });
+    }
+    const html = await resp.text();
+    const $ = load(html);
+    const text = $('body').text();
+    const get = (re) => {
+      const m = text.match(re);
+      return m ? parseFloat(m[1].replace(',', '.')) : undefined;
+    };
+    const data = {
+      name: name || $('title').first().text().trim() || url,
+      calories: get(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calories?)/i),
+      protein: get(/(\d+(?:[.,]\d+)?)\s*(?:g|grammes?)\s*(?:de\s*)?(?:proteines?|protein)/i),
+      carbs: get(/(\d+(?:[.,]\d+)?)\s*(?:g|grammes?)\s*(?:de\s*)?(?:glucides?|carbs?)/i),
+      fat: get(/(\d+(?:[.,]\d+)?)\s*(?:g|grammes?)\s*(?:de\s*)?(?:lipides?|fat|gras)/i)
+    };
+    if (data.calories || data.protein || data.carbs || data.fat) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'no data' });
+    }
+  } catch (err) {
+    console.error('scrape-nutrition error', err);
+    res.status(500).json({ error: 'scrape failed' });
+  }
+});
+
+// Fallback nutrition analysis via Gemini/OpenRouter
+app.post('/api/gemini-nutrition', async (req, res) => {
+  const { description } = req.body || {};
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return res.status(500).json({ error: 'API key not set' });
+  if (!description) return res.status(400).json({ error: 'Description requise' });
+  try {
+    const body = {
+      model: 'google/gemini-2.0-flash',
+      messages: [
+        { role: 'system', content: GEMINI_PROMPT },
+        { role: 'user', content: description }
+      ],
+      web_search: true,
+      web_access: true
+    };
+    console.log('Gemini Request:', body);
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      console.error('Gemini API error', await resp.text());
+      return res.status(500).json({ error: 'Erreur Gemini/Google AI' });
+    }
+    const data = await resp.json();
+    console.log('Gemini Response:', data);
+    if (data.error) {
+      return res.status(500).json({ error: `Erreur Gemini: ${data.error.message || 'unknown'}` });
+    }
+    const geminiText = data.choices?.[0]?.message?.content || 'Aucune donnée trouvée';
+    res.json({ result: geminiText });
+  } catch (e) {
+    console.error('[Gemini fallback error]', e);
+    res.status(500).json({ error: 'Erreur Gemini/Google AI' });
   }
 });
 

@@ -1,23 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
-import { searchNutrition } from '../utils/nutritionSearch';
+import { searchNutrition, geminiAnalyzeText } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
-import { findClosestFood } from '../utils/findClosestFood';
+import { findFoodSmart } from '../utils/findFoodSmart';
+import { shouldUseGemini } from "../utils/shouldUseGemini";
+import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
+import { parseFoodsFromInput } from '../utils/parseFoodsFromInput';
 import { detectModificationIntent } from '../utils/detectModification';
-import { Recipe, FoodItem, DailyLog, FoodEntry } from '../types';
+import { Recipe, FoodItem, DailyLog, FoodEntry, ParsedFood } from '../types';
 
-const normalize = (str: string) =>
-  str
-    .toLowerCase()
-    .replace(/œ/g, 'oe')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\p{P}\p{S}]/gu, '')
-    .trim();
 
 interface AIChatProps {
   onClose: () => void;
@@ -48,6 +43,7 @@ interface Message {
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
+  fromGemini?: boolean;
   suggestions?: FoodSuggestion[];
   recipe?: Recipe;
 }
@@ -110,22 +106,33 @@ const AIChat: React.FC<AIChatProps> = ({
     else if (lower.includes("dîner") || lower.includes("soir")) meal = "dîner";
     else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
-    const parsed = await parseFoods(description);
+    const naive = parseFoodsFromInput(description);
+    let parsed = [] as ParsedFood[];
+    if (naive.length) {
+      for (const n of naive) {
+        const p = await parseFoods(n.raw);
+        if (p && p[0]) parsed.push(p[0]);
+        else parsed.push({ name: n.name, quantity: n.quantity, unit: 'unite' });
+      }
+    } else {
+      parsed = await parseFoods(description);
+    }
+
+    const notFound: string[] = [];
 
     for (const food of parsed) {
-      const baseName = normalize(food.name);
+      const baseName = normalizeFoodName(food.name);
       const fromKeywords = keywordFoods.find(k =>
-        k.keywords.some(kw => baseName.includes(normalize(kw)))
+        k.keywords.some(kw => baseName.includes(normalizeFoodName(kw)))
       );
       let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
       if (!info) {
-        const cands = findClosestFoods(baseName, fullFoodBase, 2);
-        if (cands.length > 1 && cands[0].score - cands[1].score <= 1) {
-          questions.push(`Tu veux dire ${cands[0].food.name} ou ${cands[1].food.name} ?`);
+        const { food: found, alternatives } = findFoodSmart(baseName, fullFoodBase);
+        if (alternatives.length > 0 && found) {
+          questions.push(`Tu veux dire ${found.name} ou ${alternatives[0].name} ?`);
           continue;
         }
-        const closest = cands[0]?.food || findClosestFood(baseName, fullFoodBase);
-        if (closest) info = closest as FoodItem;
+        if (found) info = found as FoodItem;
       }
       if (!info) {
         const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
@@ -133,11 +140,14 @@ const AIChat: React.FC<AIChatProps> = ({
           info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
         }
       }
-      if (!info) continue;
+      if (!info) {
+        notFound.push(food.name);
+        continue;
+      }
       const baseAmount = parseFloat(info.unit) || 100;
       let grams = food.quantity;
       if (food.unit === "unite") {
-        const w = unitWeights[normalize(baseName)] || baseAmount;
+        const w = unitWeights[normalizeFoodName(baseName)] || baseAmount;
         grams = food.quantity * w;
       } else if (food.unit === "cas") {
         grams = food.quantity * 15;
@@ -163,7 +173,7 @@ const AIChat: React.FC<AIChatProps> = ({
         confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
       });
     }
-    return { suggestions, questions };
+    return { suggestions, questions, notFound };
   };
 
   const parseRecipe = (text: string): Recipe | null => {
@@ -216,7 +226,7 @@ const AIChat: React.FC<AIChatProps> = ({
         const target = dailyLog.entries.find(
           e =>
             e.meal === mod.meal &&
-            normalize(e.name) === normalize(mod.name)
+            normalizeFoodName(e.name) === normalizeFoodName(mod.name)
         );
         clearTimeout(timeout);
         if (target) {
@@ -257,55 +267,100 @@ const AIChat: React.FC<AIChatProps> = ({
         setIsLoading(false);
         return;
       }
+
+      if (shouldUseGemini(input, fullFoodBase)) {
+        const gem = await geminiAnalyzeText(input);
+        const text = gem ||
+          'Aucun resultat trouve, merci d\u2019ajouter les valeurs a la main.';
+        clearTimeout(timeout);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: text,
+            timestamp: new Date(),
+            fromGemini: true
+          }
+        ]);
+        setIsLoading(false);
+        setInput('');
+        voiceResultRef.current = '';
+        return;
+      }
+
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const { suggestions, questions } = await analyzeFood(input).catch(e => {
+      const { suggestions, questions, notFound } = await analyzeFood(input).catch(e => {
         console.error('analyzeFood error', e);
-        return { suggestions: [] as FoodSuggestion[], questions: [] as string[] };
+        return { suggestions: [] as FoodSuggestion[], questions: [] as string[], notFound: [] as string[] };
       });
       const recipe = parseRecipe(input);
 
       if (timedOut) return;
+
+      if (suggestions.length < 2 && (questions.length > 0 || notFound.length > 0 || suggestions.length === 0)) {
+        const gem = await geminiAnalyzeText(input);
+        const text = gem || 'Aucun aliment trouvé. Essayez de décrire autrement ou vérifiez l\u2019orthographe.';
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: text,
+          timestamp: new Date(),
+          fromGemini: true
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        setInput('');
+        voiceResultRef.current = '';
+        return;
+      }
     
     let aiResponse = '';
     if (questions.length > 0) {
       aiResponse = questions.join('\n');
-    } else if (suggestions.length > 0) {
-      aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
+    } else if (suggestions.length > 0 || notFound.length > 0) {
+      if (suggestions.length > 0) {
+        aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
 
-      suggestions.forEach((suggestion, index) => {
-        const totalCalories = (suggestion.calories ?? 0).toFixed(0);
-        const displayUnit = suggestion.unit.replace(/^100/, '');
-        aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
-          `\n        - ${totalCalories} kcal` +
-          `\n        - Protéines: ${(suggestion.protein ?? 0).toFixed(1)}g` +
-          `\n        - Glucides: ${(suggestion.carbs ?? 0).toFixed(1)}g` +
-          `\n        - Lipides: ${(suggestion.fat ?? 0).toFixed(1)}g`;
-      });
+        suggestions.forEach((suggestion, index) => {
+          const totalCalories = (suggestion.calories ?? 0).toFixed(0);
+          const displayUnit = suggestion.unit.replace(/^100/, '');
+          aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
+            `\n        - ${totalCalories} kcal` +
+            `\n        - Protéines: ${(suggestion.protein ?? 0).toFixed(1)}g` +
+            `\n        - Glucides: ${(suggestion.carbs ?? 0).toFixed(1)}g` +
+            `\n        - Lipides: ${(suggestion.fat ?? 0).toFixed(1)}g`;
+        });
 
-      const totals = suggestions.reduce(
-        (acc, s) => ({
-          calories: acc.calories + s.calories,
-          protein: acc.protein + s.protein,
-          carbs: acc.carbs + s.carbs,
-          fat: acc.fat + s.fat,
-          fiber: (acc.fiber || 0) + (s.fiber || 0),
-          vitaminC: (acc.vitaminC || 0) + (s.vitaminC || 0)
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
-      );
+        const totals = suggestions.reduce(
+          (acc, s) => ({
+            calories: acc.calories + s.calories,
+            protein: acc.protein + s.protein,
+            carbs: acc.carbs + s.carbs,
+            fat: acc.fat + s.fat,
+            fiber: (acc.fiber || 0) + (s.fiber || 0),
+            vitaminC: (acc.vitaminC || 0) + (s.vitaminC || 0)
+          }),
+          { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
+        );
 
-      aiResponse += `\n\n**Total**: ${(totals.calories ?? 0).toFixed(0)} kcal - ${(totals.protein ?? 0).toFixed(1)}g protéines, ${(totals.carbs ?? 0).toFixed(1)}g glucides, ${(totals.fat ?? 0).toFixed(1)}g lipides`;
-      if (totals.fiber) {
-        aiResponse += `, ${(totals.fiber ?? 0).toFixed(1)}g fibres`;
+        aiResponse += `\n\n**Total**: ${(totals.calories ?? 0).toFixed(0)} kcal - ${(totals.protein ?? 0).toFixed(1)}g protéines, ${(totals.carbs ?? 0).toFixed(1)}g glucides, ${(totals.fat ?? 0).toFixed(1)}g lipides`;
+        if (totals.fiber) {
+          aiResponse += `, ${(totals.fiber ?? 0).toFixed(1)}g fibres`;
+        }
+        if (totals.vitaminC) {
+          aiResponse += `, ${(totals.vitaminC ?? 0).toFixed(0)}mg vitamine C`;
+        }
+        aiResponse += '.';
+
+        aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
       }
-      if (totals.vitaminC) {
-        aiResponse += `, ${(totals.vitaminC ?? 0).toFixed(0)}mg vitamine C`;
+      if (notFound.length > 0) {
+        if (!aiResponse) aiResponse = '';
+        aiResponse += '\n\n' + notFound.map(n => `❌ ${n} : Aucun résultat fiable trouvé pour cet aliment`).join('\n');
+        aiResponse += '\nVous pouvez l\'ajouter manuellement si vous connaissez les valeurs.';
       }
-      aiResponse += '.';
-
-      aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
       const web = await searchNutritionLinks(input);
       if (web.length > 0) {
@@ -485,6 +540,9 @@ const AIChat: React.FC<AIChatProps> = ({
                   <span className="text-xs opacity-70">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
+                  {message.fromGemini && (
+                    <span className="ml-2 px-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white text-[10px]">Gemini</span>
+                  )}
                 </div>
                 <div className="whitespace-pre-line">{message.content}</div>
                 
@@ -559,6 +617,16 @@ const AIChat: React.FC<AIChatProps> = ({
                         Ajouter à mes recettes
                       </button>
                     )}
+                  </div>
+                )}
+                {message.fromGemini && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => alert('Fonctionnalité à venir')}
+                      className="text-xs text-blue-400 underline"
+                    >
+                      Ajouter à ma base
+                    </button>
                   </div>
                 )}
               </div>

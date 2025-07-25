@@ -5,24 +5,38 @@ import { safeJson } from './safeJson';
 const API = 'https://nutritalk-2-0.onrender.com/api';
 export const API_BASE = API;
 
+// Store cookies in memory when running in a non-browser environment (tests)
+const memoryCookies: Record<string, string> = {};
+
 function readCookie(name: string): string | null {
-  return (
-    document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(name + '='))?.split('=')[1] || null
-  );
+  if (typeof document !== 'undefined') {
+    return (
+      document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(name + '='))?.split('=')[1] || null
+    );
+  }
+  return memoryCookies[name] || null;
 }
 
 let authToken: string | null = readCookie('token');
 
 export function setAuthToken(token: string, remember: boolean) {
   authToken = token;
-  document.cookie = `token=${token}; path=/; ${remember ? 'max-age=' + 30 * 24 * 60 * 60 : ''}`;
+  if (typeof document !== 'undefined') {
+    document.cookie = `token=${token}; path=/; ${remember ? 'max-age=' + 30 * 24 * 60 * 60 : ''}`;
+  } else {
+    memoryCookies['token'] = token;
+  }
 }
 
 export function clearAuthToken() {
   authToken = null;
-  document.cookie = 'token=; path=/; max-age=0';
+  if (typeof document !== 'undefined') {
+    document.cookie = 'token=; path=/; max-age=0';
+  } else {
+    delete memoryCookies['token'];
+  }
 }
 
 export function getAuthToken() {

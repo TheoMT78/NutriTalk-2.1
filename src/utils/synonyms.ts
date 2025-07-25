@@ -1,0 +1,17 @@
+export const synonyms: Record<string, string> = {
+  "fraises": "fraise",
+  "fraise": "fraise",
+  "pommes de terre": "pomme de terre",
+  "pomme de terre": "pomme de terre",
+  "flocon d'avoine": "flocons d'avoine",
+  "flocons d'avoine": "flocons d'avoine",
+  "farine d'avoine": "farine d'avoine",
+  "farine complete": "farine complete",
+  "farines completes": "farine complete",
+  "oeufs": "oeuf",
+  "oeuf": "oeuf",
+  "œufs": "oeuf",
+  "œuf": "oeuf",
+  "bananes": "banane",
+  "banane": "banane",
+};

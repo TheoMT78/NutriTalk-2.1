@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, TrendingUp } from 'lucide-react';
+import PeriodSelector from './PeriodSelector';
 import { User } from '../types';
 import WeightChart from './WeightChart';
 import StepHistoryChart from './StepHistoryChart';
@@ -10,8 +11,9 @@ interface HistoryProps {
 }
 
 const History: React.FC<HistoryProps> = ({ user, weightHistory }) => {
-  const [currentView, setCurrentView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('month');
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [year, setYear] = useState(new Date().getFullYear());
   const [stepsPeriod, setStepsPeriod] = useState<'week' | 'month' | 'sixMonths' | 'year'>('week');
   const [weightPeriod, setWeightPeriod] = useState<'week' | 'month' | 'threeMonths' | 'sixMonths'>('week');
   const [filterDate, setFilterDate] = useState('');
@@ -35,7 +37,7 @@ interface HistoryDay {
   const [historyData] = useState<HistoryDay[]>([]);
 
   const getCurrentPeriodData = () => {
-    const days = currentView === 'monthly' ? 30 : currentView === 'weekly' ? 7 : 7;
+    const days = period === 'month' ? 30 : period === 'week' ? 7 : 7;
     return historyData.slice(-days);
   };
 
@@ -245,51 +247,24 @@ interface HistoryDay {
       </div>
 
       {/* Filtres de vue */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Calendar className="text-blue-500" size={24} />
-            <h3 className="text-lg font-semibold">Période d'analyse</h3>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setSelectedDate(new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000))}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="text-sm font-medium">
-              {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-            </span>
-            <button
-              onClick={() => setSelectedDate(new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000))}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          {(['daily', 'weekly', 'monthly'] as const).map((view) => (
-            <button
-              key={view}
-              onClick={() => setCurrentView(view)}
-              className={`p-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                currentView === view
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {view === 'daily' ? 'Quotidien' : 
-               view === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PeriodSelector
+        period={period}
+        setPeriod={setPeriod}
+        month={month}
+        setMonth={(m) => {
+          setMonth(m);
+          setCalendarDate(new Date(year, m, 1));
+        }}
+        year={year}
+        setYear={(y) => {
+          setYear(y);
+          setCalendarDate(new Date(y, month, 1));
+        }}
+        className=""
+      />
 
       {/* Statistiques moyennes */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <div className="flex items-center space-x-3 mb-6">
           <TrendingUp className="text-green-500" size={24} />
           <h3 className="text-lg font-semibold">Moyennes des 7 derniers jours</h3>
@@ -335,8 +310,8 @@ interface HistoryDay {
       </div>
 
       {/* Détails par jour */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-2">
+      <div className="bg-[#222B3A] rounded-2xl shadow-md overflow-hidden">
+        <div className="p-6 border-b border-gray-700 flex items-center space-x-2">
           <h3 className="text-lg font-semibold">Détails par jour</h3>
           <div className="relative">
             <button
@@ -420,7 +395,7 @@ interface HistoryDay {
       </div>
 
       {/* Graphique des pas */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Évolution des pas</h3>
           <select
@@ -444,7 +419,7 @@ interface HistoryDay {
       {/* Graphique du poids */}
 
       {/* Graphique du poids */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Évolution du poids</h3>
           <select

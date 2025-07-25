@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, TrendingUp, Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
+import { Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
 import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
 import EditEntryModal from './EditEntryModal';
@@ -125,50 +125,31 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header avec message de motivation */}
-      <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Bonjour {user.name} !</h2>
-        <p className="text-blue-100 mb-4">{getGoalMessage()}</p>
-        <div className="flex items-center space-x-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <Target size={16} />
-            <span>Objectif: {user.goal}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <TrendingUp size={16} />
-            <span>{dailyCaloriesGoal} kcal/jour</span>
-          </div>
-        </div>
+      <div onClick={() => setShowMacros(true)} className="cursor-pointer">
+        <CalorieProgress
+          consumed={dailyLog.totalCalories}
+          burned={stepsCalories}
+          target={dailyCaloriesGoal}
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
+        />
       </div>
-
-      {/* Statistiques principales */}
       <MacrosRingDashboard user={user} log={dailyLog} />
-
-      {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div onClick={() => setShowMacros(true)} className="cursor-pointer">
-          <CalorieProgress
-            consumed={dailyLog.totalCalories}
-            burned={stepsCalories}
-            target={dailyCaloriesGoal}
-            className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
-          />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <StepProgress
           current={dailyLog.steps}
           target={stepGoal}
           onUpdate={onUpdateSteps}
           onSync={syncSteps}
           syncing={isSyncingSteps}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
         />
         <WaterProgress
           current={dailyLog.water}
           target={waterGoal}
           onUpdate={onUpdateWater}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          className="bg-[#222B3A] rounded-2xl p-6 shadow-md w-full"
         />
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center">
+        <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md flex flex-col items-center justify-center w-full">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Poids</p>
           <p className="text-2xl font-bold mb-2">{(user.weight ?? 0).toFixed(1)} kg</p>
           <div className="flex flex-wrap justify-center gap-2 mb-2">
@@ -185,8 +166,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
       {/* Journal alimentaire */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-[#222B3A] rounded-2xl shadow-md">
+        <div className="p-6 border-b border-gray-700">
           <h3 className="text-lg font-semibold">Journal alimentaire</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {new Date(dailyLog.date).toLocaleDateString('fr-FR', { 

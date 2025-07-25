@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Mic } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 
 interface FloatingAIButtonProps {
   onClick: () => void;
@@ -9,21 +9,11 @@ const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({ onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 z-50 group"
-      title="Assistant IA NutriTalk"
+      className="fixed z-50 right-4 bottom-20 md:bottom-8 bg-violet-500 hover:bg-violet-600 shadow-xl rounded-full w-16 h-16 flex items-center justify-center"
+      style={{ boxShadow: '0 4px 24px 0 rgba(80,0,150,0.22)' }}
+      aria-label="Ouvrir l'assistant IA"
     >
-      <div className="flex items-center space-x-2">
-        <MessageCircle size={24} />
-        <div className="hidden group-hover:block">
-          <Mic size={20} className="animate-pulse" />
-        </div>
-      </div>
-      
-      {/* Effet d'ondulation */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-30 transform scale-110 transition-all duration-300" />
-      
-      {/* Indicateur de disponibilité */}
-      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+      <MessageCircle size={32} className="text-white" />
     </button>
   );
 };

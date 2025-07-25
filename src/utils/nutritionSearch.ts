@@ -1,5 +1,19 @@
 import { searchProductFallback } from './openFoodFacts';
 import { safeJson } from './safeJson';
+import { API_BASE } from './api';
+
+async function scrapeNutritionFromUrl(url: string, name: string): Promise<NutritionInfo | null> {
+  const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
+  try {
+    const res = await fetch(`${base}/scrape-nutrition?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`);
+    if (!res.ok) return null;
+    const data = await safeJson<NutritionInfo>(res);
+    return data || null;
+  } catch (e) {
+    console.error('scrapeNutritionFromUrl error', e);
+    return null;
+  }
+}
 
 function extractNutrition(text: string) {
   const cals = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calories?)/i);
@@ -44,6 +58,45 @@ async function searchPreferredSites(query: string): Promise<NutritionInfo | null
     }
   }
   return null;
+}
+
+async function geminiNutrition(query: string): Promise<NutritionInfo | null> {
+  const base = API_BASE;
+  try {
+    const res = await fetch(`${base}/gemini-nutrition`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: query })
+    });
+    if (!res.ok) return null;
+    const data = await safeJson<{ result: string }>(res);
+    const text = data?.result || '';
+    if (!text) return null;
+    const nut = extractNutrition(text);
+    if (nut.calories || nut.protein || nut.carbs || nut.fat) {
+      return { name: query, ...nut };
+    }
+  } catch (e) {
+    console.error('geminiNutrition error', e);
+  }
+  return null;
+}
+
+export async function geminiAnalyzeText(query: string): Promise<string | null> {
+  const base = API_BASE;
+  try {
+    const res = await fetch(`${base}/gemini-nutrition`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: query })
+    });
+    if (!res.ok) return null;
+    const data = await safeJson<{ result: string }>(res);
+    return data?.result || null;
+  } catch (e) {
+    console.error('geminiAnalyzeText error', e);
+    return null;
+  }
 }
 
 export interface NutritionInfo {
@@ -150,11 +203,11 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
           const title: string = item.title || query;
           const nut = extractNutrition(text);
           if (nut.calories || nut.protein || nut.carbs || nut.fat) {
-            return {
-              name: title,
-              ...nut,
-              unit: '100g'
-            };
+            return { name: title, ...nut, unit: '100g' };
+          }
+          if (item.link) {
+            const scraped = await scrapeNutritionFromUrl(item.link, title);
+            if (scraped) return scraped;
           }
         }
       }
@@ -163,6 +216,11 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
     }
   }
 
+  const gemini = await geminiNutrition(query);
+  if (gemini) return gemini;
+
   return null;
 }
+
+export { geminiNutrition };
 

@@ -82,28 +82,6 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700">
-          <nav className="flex justify-around py-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onViewChange(item.id)}
-                  className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                    currentView === item.id
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}
-                >
-                  <Icon size={20} />
-                  <span className="text-xs">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
       </div>
     </header>
   );

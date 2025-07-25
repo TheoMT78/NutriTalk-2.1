@@ -10,15 +10,18 @@
     "preview": "vite preview",
     "postinstall": "npm install --prefix server",
     "update-food-db": "node scripts/updateFoodDB.js 5000",
-    "test": "tsx test/parseFoods.test.ts && tsx test/detectModification.test.ts && tsx test/serverRoutes.test.ts",
+    "test": "tsx test/parseFoods.test.ts && tsx test/detectModification.test.ts && tsx test/serverRoutes.test.ts && tsx test/aiChat.test.ts && tsx test/geminiAnalyze.test.ts && tsx test/shouldUseGemini.test.ts",
     "ci": "npm test"
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",
+    "fuse.js": "^7.1.0",
+    "fuzzysort": "^3.1.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^3.1.0"
+    "recharts": "^3.1.0",
+    "remove-accents": "^0.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",

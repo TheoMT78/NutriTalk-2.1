@@ -39,6 +39,7 @@ EDAMAM_APP_KEY=
 SPOONACULAR_KEY=
 GOOGLE_API_KEY=
 GOOGLE_CSE_ID=
+OPENROUTER_API_KEY=
 MONGODB_URI=
 MONGODB_DBNAME=nutritalk
 ```
@@ -46,6 +47,10 @@ Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au 
 `MONGODB_URI` permet de stocker toutes les données dans un cluster MongoDB au lieu du fichier `db.json`.
 `MONGODB_DBNAME` précise la base à utiliser (par défaut `nutritalk`).
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
+
+Pour activer l'analyse nutritionnelle via Gemini, définissez la variable
+`OPENROUTER_API_KEY` dans l'environnement de votre serveur (Render ou Netlify).
+Cette clé n'est jamais envoyée au client.
 
 ### Tester la connexion MongoDB
 
