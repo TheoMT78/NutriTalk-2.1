@@ -104,16 +104,16 @@ export default function FoodDetailModal({ food, meal, onAdd, onClose }: Props) {
             <div className="text-gray-400">Glucides</div>
           </div>
           <div>
-            <div className="font-semibold" style={{ color: '#a783ff' }}>
-              {totalFat}g
-            </div>
-            <div className="text-gray-400">Lipides</div>
-          </div>
-          <div>
             <div className="font-semibold" style={{ color: '#23e38d' }}>
               {totalProtein}g
             </div>
             <div className="text-gray-400">Protéines</div>
+          </div>
+          <div>
+            <div className="font-semibold" style={{ color: '#a783ff' }}>
+              {totalFat}g
+            </div>
+            <div className="text-gray-400">Lipides</div>
           </div>
         </div>
         <button
