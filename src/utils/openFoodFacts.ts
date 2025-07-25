@@ -1,5 +1,6 @@
 export interface OFFProduct {
   product_name: string;
+  brands?: string;
   nutriments?: {
     'energy-kcal_100g'?: number;
     proteins_100g?: number;
@@ -24,7 +25,7 @@ export function loadLocalFoodBase(): OFFProduct[] {
 
 export async function fetchProductByBarcode(barcode: string): Promise<OFFProduct | null> {
   try {
-    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,nutriments,code,serving_size`;
+    const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,nutriments,code,serving_size`;
     const res = await fetch(url);
     if (!res.ok) {
       console.error('OpenFoodFacts barcode request failed', res.status, res.statusText);
@@ -41,7 +42,7 @@ export async function fetchProductByBarcode(barcode: string): Promise<OFFProduct
 
 export async function searchProduct(query: string): Promise<OFFProduct[]> {
   try {
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,code,serving_size`;
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&fields=product_name,brands,nutriments,code,serving_size`;
     const res = await fetch(url);
     if (!res.ok) {
       console.error('OpenFoodFacts search request failed', res.status, res.statusText);

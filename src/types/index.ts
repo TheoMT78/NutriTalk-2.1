@@ -65,6 +65,7 @@ export interface FoodItem {
   protein: number;
   carbs: number;
   fat: number;
+  brand?: string;
   fiber?: number;
   vitaminA?: number;
   vitaminC?: number;

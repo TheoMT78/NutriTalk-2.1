@@ -5,6 +5,7 @@ import { FoodItem } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import QRScanner from './QRScanner';
 import { OFFProduct, searchProductFallback } from '../utils/openFoodFacts';
+import FoodDetailModal from './FoodDetailModal';
 
 interface FoodSearchProps {
   onAddFood: (food: {
@@ -27,6 +28,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [detailFood, setDetailFood] = useState<FoodItem | null>(null);
   const [favorites, setFavorites] = useLocalStorage<string[]>('nutritalk-favorites', []);
   const [customFoods, setCustomFoods] = useLocalStorage<FoodItem[]>('nutritalk-custom-foods', []);
   const [externalFoods, setExternalFoods] = useState<FoodItem[]>([]);
@@ -102,6 +104,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       const mapped: FoodItem[] = results.slice(0, 5).map(p => ({
         id: p.code,
         name: p.product_name || 'Produit',
+        brand: (p as any).brands || undefined,
         calories: p.nutriments?.['energy-kcal_100g'] || 0,
         protein: p.nutriments?.proteins_100g || 0,
         carbs: p.nutriments?.carbohydrates_100g || 0,
@@ -132,11 +135,9 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     unit: '100g'
   });
 
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-
   const handleAddFood = (food: FoodItem) => {
-    const quantity = quantities[food.id] || 100;
-    const multiplier = quantity / 100;
+    const quantity = parseFloat(food.unit) || 1;
+    const multiplier = quantity / (parseFloat(food.unit) || quantity);
     
   onAddFood({
       name: food.name,
@@ -155,8 +156,6 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       meal: selectedMeal
     });
 
-    // Reset quantity after adding
-    setQuantities(prev => ({ ...prev, [food.id]: 100 }));
   };
 
   const toggleFavorite = (foodId: string) => {
@@ -200,6 +199,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     const item: FoodItem = {
       id: p.code,
       name: p.product_name || 'Produit',
+      brand: (p as any).brands || undefined,
       calories: p.nutriments?.['energy-kcal_100g'] || 0,
       protein: p.nutriments?.proteins_100g || 0,
       carbs: p.nutriments?.carbohydrates_100g || 0,
@@ -294,9 +294,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       {/* Liste des aliments */}
       <div className="bg-[#222B3A] rounded-2xl shadow-md">
         <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">
-            Aliments ({filteredFoods.length})
-          </h3>
+          <h3 className="text-lg font-semibold mb-4">Aliments</h3>
           
           {filteredFoods.length === 0 ? (
             <div className="text-center py-8">
@@ -305,71 +303,31 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredFoods.map((food) => (
                 <div
                   key={food.id}
-                  className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0"
+                  className="flex items-center justify-between p-4 rounded-xl bg-[#23272F] cursor-pointer"
+                  onClick={() => setDetailFood(food)}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium">{food.name}</h4>
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        {food.category}
-                      </span>
-                      {food.isCustom && (
-                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">
-                          Personnalisé
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {food.calories} kcal • P: {food.protein}g • G: {food.carbs}g • L: {food.fat}g
-                      <span className="text-xs ml-2">pour {food.unit}</span>
-                    </div>
+                  <div className="flex flex-col text-left">
+                    <span className="font-bold text-white text-base">{food.name}</span>
+                    <span className="text-gray-400 text-sm mt-0.5">
+                      {food.calories} cal, {food.unit}
+                      {food.brand ? `, ${food.brand}` : ''}
+                    </span>
                   </div>
-                  
-                  <div className="flex items-center space-x-3 sm:ml-4">
-                    <button
-                      onClick={() => toggleFavorite(food.id)}
-                      className={`p-2 rounded-lg transition-colors duration-200 ${
-                        favorites.includes(food.id)
-                          ? 'text-yellow-500 hover:text-yellow-600'
-                          : 'text-gray-400 hover:text-yellow-500'
-                      }`}
-                    >
-                      <Star size={16} fill={favorites.includes(food.id) ? 'currentColor' : 'none'} />
-                    </button>
-                    
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          value={quantities[food.id] || 100}
-                          onChange={(e) =>
-                            setQuantities(prev => ({
-                              ...prev,
-                              [food.id]: parseFloat(e.target.value) || 100,
-                            }))
-                          }
-                          className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-600"
-                          min="1"
-                          step="1"
-                        />
-                        <span className="text-sm text-gray-500">g</span>
-                      </div>
-                      <button
-                        onClick={() => handleAddFood(food)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 w-full"
-                      >
-                        Ajouter
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleAddFood(food); }}
+                    className="ml-4 w-10 h-10 rounded-full bg-blue-600 text-white text-xl flex items-center justify-center"
+                    aria-label="Ajouter rapidement"
+                  >
+                    +
+                  </button>
                 </div>
               ))}
             </div>
-          )}
+         )}
         </div>
       </div>
 
@@ -498,6 +456,17 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       )}
       {showScanner && (
         <QRScanner onResult={handleScanResult} onClose={() => setShowScanner(false)} />
+      )}
+      {detailFood && (
+        <FoodDetailModal
+          food={detailFood}
+          meal={selectedMeal}
+          onAdd={(entry) => {
+            onAddFood(entry);
+            setDetailFood(null);
+          }}
+          onClose={() => setDetailFood(null)}
+        />
       )}
     </div>
   );
