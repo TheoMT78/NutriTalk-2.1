@@ -82,6 +82,23 @@ async function geminiNutrition(query: string): Promise<NutritionInfo | null> {
   return null;
 }
 
+export async function geminiAnalyzeText(query: string): Promise<string | null> {
+  const base = API_BASE;
+  try {
+    const res = await fetch(`${base}/gemini-nutrition`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: query })
+    });
+    if (!res.ok) return null;
+    const data = await safeJson<{ result: string }>(res);
+    return data?.result || null;
+  } catch (e) {
+    console.error('geminiAnalyzeText error', e);
+    return null;
+  }
+}
+
 export interface NutritionInfo {
   name: string;
   calories?: number;
@@ -204,4 +221,6 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
 
   return null;
 }
+
+export { geminiNutrition };
 

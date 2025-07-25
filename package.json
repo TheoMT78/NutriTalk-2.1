@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "postinstall": "npm install --prefix server",
     "update-food-db": "node scripts/updateFoodDB.js 5000",
-    "test": "tsx test/parseFoods.test.ts && tsx test/detectModification.test.ts && tsx test/serverRoutes.test.ts && tsx test/aiChat.test.ts",
+    "test": "tsx test/parseFoods.test.ts && tsx test/detectModification.test.ts && tsx test/serverRoutes.test.ts && tsx test/aiChat.test.ts && tsx test/geminiAnalyze.test.ts",
     "ci": "npm test"
   },
   "dependencies": {
