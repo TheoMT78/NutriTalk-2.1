@@ -157,7 +157,7 @@ app.get('/scrape-nutrition', async (req, res) => {
 app.post('/api/gemini-nutrition', async (req, res) => {
   const { description } = req.body || {};
   const key = process.env.OPENROUTER_API_KEY;
-  if (!key) return res.status(500).json({ error: 'Clé API Gemini manquante' });
+  if (!key) return res.status(500).json({ error: 'API key not set' });
   if (!description) return res.status(400).json({ error: 'Description requise' });
   try {
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
