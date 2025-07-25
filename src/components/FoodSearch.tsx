@@ -304,28 +304,50 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredFoods.map((food) => (
-                <div
-                  key={food.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-[#23272F] cursor-pointer"
-                  onClick={() => setDetailFood(food)}
-                >
-                  <div className="flex flex-col text-left">
-                    <span className="font-bold text-white text-base">{food.name}</span>
-                    <span className="text-gray-400 text-sm mt-0.5">
-                      {food.calories} cal, {food.unit}
-                      {food.brand ? `, ${food.brand}` : ''}
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleAddFood(food); }}
-                    className="ml-4 w-10 h-10 rounded-full bg-blue-600 text-white text-xl flex items-center justify-center"
-                    aria-label="Ajouter rapidement"
+              {filteredFoods.map((food) => {
+                const fav = favorites.includes(food.id);
+                return (
+                  <div
+                    key={food.id}
+                    className="flex items-center justify-between p-4 rounded-xl bg-[#222B3A] cursor-pointer"
+                    onClick={() => setDetailFood(food)}
                   >
-                    +
-                  </button>
-                </div>
-              ))}
+                    <div className="flex flex-col text-left">
+                      <span className="font-bold text-white text-base">{food.name}</span>
+                      <span className="text-gray-400 text-sm mt-0.5">
+                        {food.calories} cal, {food.unit}
+                        {food.brand ? `, ${food.brand}` : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center ml-4 gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (fav) {
+                            setFavorites(favorites.filter(id => id !== food.id));
+                          } else {
+                            setFavorites([...favorites, food.id]);
+                          }
+                        }}
+                        className="w-8 h-8 flex items-center justify-center text-yellow-400"
+                        aria-label="Favori"
+                      >
+                        <Star size={20} fill={fav ? 'currentColor' : 'none'} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddFood(food);
+                        }}
+                        className="w-9 h-9 rounded-full bg-blue-600 text-white text-lg flex items-center justify-center"
+                        aria-label="Ajouter rapidement"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
          )}
         </div>
