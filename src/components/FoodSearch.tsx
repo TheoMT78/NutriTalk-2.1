@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Star, X } from 'lucide-react';
 import FoodSearchHeader from './FoodSearchHeader';
 import { FoodItem } from '../types';
@@ -6,6 +6,8 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import QRScanner from './QRScanner';
 import { OFFProduct, searchProductFallback } from '../utils/openFoodFacts';
 import FoodDetailModal from './FoodDetailModal';
+import Fuse from 'fuse.js';
+import { normalizeFoodName } from '../utils/normalizeFoodName';
 
 interface FoodSearchProps {
   onAddFood: (food: {
@@ -86,11 +88,27 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
 
   const allFoods = [...foods, ...customFoods, ...externalFoods];
 
-  const filteredFoods = allFoods.filter(food => {
-    const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const normalizedFoods = useMemo(
+    () =>
+      allFoods.map((f) => ({ ...f, _norm: normalizeFoodName(f.name) })),
+    [allFoods]
+  );
+
+  const fuse = useMemo(
+    () => new Fuse(normalizedFoods, { keys: ['_norm'], threshold: 0.3 }),
+    [normalizedFoods]
+  );
+
+  const searchResults = useMemo(() => {
+    if (!searchTerm) return normalizedFoods;
+    const results = fuse.search(normalizeFoodName(searchTerm));
+    return results.map((r) => r.item);
+  }, [searchTerm, fuse, normalizedFoods]);
+
+  const filteredFoods = searchResults.filter((food) => {
     const matchesCategory = selectedCategory ? food.category === selectedCategory : true;
     const matchesFavorites = showFavorites ? favorites.includes(food.id) : true;
-    return matchesSearch && matchesCategory && matchesFavorites;
+    return matchesCategory && matchesFavorites;
   });
 
   useEffect(() => {
@@ -309,7 +327,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
                 return (
                   <div
                     key={food.id}
-                    className="flex items-center justify-between p-4 rounded-xl bg-[#2B3444] cursor-pointer"
+                    className="flex items-center justify-between p-4 rounded-xl bg-[#222B3A] cursor-pointer"
                     onClick={() => setDetailFood(food)}
                   >
                     <div className="flex flex-col text-left">

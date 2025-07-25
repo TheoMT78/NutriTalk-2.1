@@ -10,6 +10,8 @@ export const synonyms: Record<string, string> = {
   "farines completes": "farine complete",
   "oeufs": "oeuf",
   "oeuf": "oeuf",
+  "œufs": "oeuf",
+  "œuf": "oeuf",
   "bananes": "banane",
   "banane": "banane",
 };

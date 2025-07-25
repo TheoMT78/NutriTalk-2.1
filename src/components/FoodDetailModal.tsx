@@ -98,19 +98,19 @@ export default function FoodDetailModal({ food, meal, onAdd, onClose }: Props) {
         </div>
         <div className="my-4 text-sm grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className="font-semibold" style={{ color: '#fbc150' }}>
+            <div className="font-semibold" style={{ color: '#ffb017' }}>
               {totalCarbs}g
             </div>
             <div className="text-gray-400">Glucides</div>
           </div>
           <div>
-            <div className="font-semibold" style={{ color: '#23e38d' }}>
+            <div className="font-semibold" style={{ color: '#13d38f' }}>
               {totalProtein}g
             </div>
             <div className="text-gray-400">Protéines</div>
           </div>
           <div>
-            <div className="font-semibold" style={{ color: '#a783ff' }}>
+            <div className="font-semibold" style={{ color: '#ad4ad1' }}>
               {totalFat}g
             </div>
             <div className="text-gray-400">Lipides</div>

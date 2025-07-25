@@ -2,9 +2,9 @@ import React from "react";
 import { CALORIES_PER_STEP } from "./StepProgress";
 
 const macroColors = {
-  Protéines: "#23e38d",
-  Glucides: "#fbc150",
-  Lipides: "#a783ff",
+  Protéines: "#13d38f",
+  Glucides: "#ffb017",
+  Lipides: "#ad4ad1",
 };
 
 function MacroCircle({ percent, color, value, target, label, extra }) {
