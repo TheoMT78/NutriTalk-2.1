@@ -1,5 +1,29 @@
 import React, { useState } from 'react';
 import { Camera, X } from 'lucide-react';
+
+const parseList = (value: string): string[] => {
+  return value
+    .replace(/\r/g, '')
+    .replace(/\s+(?=\d)/g, '\n')
+    .replace(/(\d+\.)/g, '\n$1')
+    .replace(/[;]+/g, '\n')
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
+const formatTime = (h: number, m: number) => {
+  if (!h && !m) return '0';
+  const hours = h ? `${h}h` : '';
+  const mins = `${m} min`;
+  return hours ? `${hours} ${mins}` : mins;
+};
+
+const parseTime = (val: string): [number, number] => {
+  const hMatch = val.match(/(\d+)h/);
+  const mMatch = val.match(/(\d+)\s*min/);
+  return [parseInt(hMatch?.[1] || '0', 10), parseInt(mMatch?.[1] || val, 10) || 0];
+};
 import { Recipe } from '../types';
 
 interface Props {
@@ -19,6 +43,13 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [servings, setServings] = useState('');
   const [prepTime, setPrepTime] = useState('');
   const [cookTime, setCookTime] = useState('');
+  const [showPortion, setShowPortion] = useState(false);
+  const [showPrep, setShowPrep] = useState(false);
+  const [showCook, setShowCook] = useState(false);
+  const [prepHours, setPrepHours] = useState(0);
+  const [prepMinutes, setPrepMinutes] = useState(0);
+  const [cookHours, setCookHours] = useState(0);
+  const [cookMinutes, setCookMinutes] = useState(0);
 
   const toggleCategory = (c: string) => {
     setCategories(prev =>
@@ -39,12 +70,54 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     arr[i] = v;
     setIngredients(arr);
   };
+  const handleIngredientBlur = (i: number) => {
+    const items = parseList(ingredients[i]);
+    if (items.length > 1) {
+      const arr = [...ingredients];
+      arr.splice(i, 1, ...items);
+      setIngredients(arr);
+    } else {
+      const arr = [...ingredients];
+      arr[i] = items[0] || '';
+      setIngredients(arr);
+    }
+  };
 
   const addStep = () => setSteps([...steps, '']);
   const updateStep = (i: number, v: string) => {
     const arr = [...steps];
     arr[i] = v;
     setSteps(arr);
+  };
+  const handleStepBlur = (i: number) => {
+    const items = parseList(steps[i]);
+    if (items.length > 1) {
+      const arr = [...steps];
+      arr.splice(i, 1, ...items);
+      setSteps(arr);
+    } else {
+      const arr = [...steps];
+      arr[i] = items[0] || '';
+      setSteps(arr);
+    }
+  };
+
+  const openPortionModal = () => {
+    setShowPortion(true);
+  };
+
+  const openPrepModal = () => {
+    const [h, m] = parseTime(prepTime);
+    setPrepHours(h);
+    setPrepMinutes(m);
+    setShowPrep(true);
+  };
+
+  const openCookModal = () => {
+    const [h, m] = parseTime(cookTime);
+    setCookHours(h);
+    setCookMinutes(m);
+    setShowCook(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -146,6 +219,13 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 key={i}
                 value={ing}
                 onChange={e => updateIngredient(i, e.target.value)}
+                onBlur={() => handleIngredientBlur(i)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleIngredientBlur(i);
+                  }
+                }}
                 className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
                 placeholder="Ajouter un ingrédient..."
               />
@@ -166,6 +246,13 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 key={i}
                 value={step}
                 onChange={e => updateStep(i, e.target.value)}
+                onBlur={() => handleStepBlur(i)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleStepBlur(i);
+                  }
+                }}
                 className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
                 placeholder={`Étape ${i + 1}`}
               />
@@ -179,39 +266,96 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
             </button>
           </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="block text-white mb-1">Portions</label>
-              <input
-                type="number"
-                min={1}
-                value={servings}
-                onChange={e => setServings(e.target.value)}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
-              />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between py-1">
+              <span className="font-semibold text-white">Portions</span>
+              <button
+                type="button"
+                onClick={openPortionModal}
+                className="text-blue-400 font-bold"
+              >
+                Définir
+              </button>
             </div>
-            <div className="flex-1">
-              <label className="block text-white mb-1">Préparation</label>
-              <input
-                type="number"
-                min={0}
-                value={prepTime}
-                onChange={e => setPrepTime(e.target.value)}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
-              />
+            <div className="flex items-center justify-between py-1">
+              <span className="font-semibold text-white">Temps de préparation</span>
+              <button
+                type="button"
+                onClick={openPrepModal}
+                className="text-blue-400 font-bold"
+              >
+                Régler le temps
+              </button>
             </div>
-            <div className="flex-1">
-              <label className="block text-white mb-1">Cuisson</label>
-              <input
-                type="number"
-                min={0}
-                value={cookTime}
-                onChange={e => setCookTime(e.target.value)}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
-              />
+            <div className="flex items-center justify-between py-1">
+              <span className="font-semibold text-white">Temps de cuisson</span>
+              <button
+                type="button"
+                onClick={openCookModal}
+                className="text-blue-400 font-bold"
+              >
+                Régler le temps
+              </button>
             </div>
           </div>
         </form>
+        {showPortion && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPortion(false)}>
+            <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
+              <h3 className="text-white font-semibold mb-2">Portions</h3>
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={servings || 0}
+                onChange={e => setServings(e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
+              />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowPortion(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
+                <button onClick={() => setShowPortion(false)} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showPrep && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPrep(false)}>
+            <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
+              <h3 className="text-white font-semibold mb-2">Temps de préparation</h3>
+              <div className="flex gap-2 mb-4">
+                <select value={prepHours} onChange={e => setPrepHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
+                  {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
+                </select>
+                <select value={prepMinutes} onChange={e => setPrepMinutes(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
+                  {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowPrep(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
+                <button onClick={() => {setPrepTime(formatTime(prepHours, prepMinutes));setShowPrep(false);}} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showCook && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCook(false)}>
+            <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
+              <h3 className="text-white font-semibold mb-2">Temps de cuisson</h3>
+              <div className="flex gap-2 mb-4">
+                <select value={cookHours} onChange={e => setCookHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
+                  {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
+                </select>
+                <select value={cookMinutes} onChange={e => setCookMinutes(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
+                  {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowCook(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
+                <button onClick={() => {setCookTime(formatTime(cookHours, cookMinutes));setShowCook(false);}} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
