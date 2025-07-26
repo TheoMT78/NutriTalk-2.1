@@ -17,8 +17,8 @@ const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange }) => {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 20px)' }}
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white pb-[40px]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 40px)' }}
     >
       <nav className="flex justify-around py-2">
         {navItems.map(item => {
