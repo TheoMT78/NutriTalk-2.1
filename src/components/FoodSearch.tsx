@@ -327,8 +327,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
                 return (
                   <div
                     key={food.id}
-                    className="flex items-center justify-between p-4 rounded-xl cursor-pointer"
-                    style={{ backgroundColor: '#434B59' }}
+                    className="flex items-center justify-between p-4 rounded-xl cursor-pointer bg-[#222B3A]"
                     onClick={() => setDetailFood(food)}
                   >
                     <div className="flex flex-col text-left">
