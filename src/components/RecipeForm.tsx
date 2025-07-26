@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Camera, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Camera, X, Mic, Trash } from 'lucide-react';
+import { SwipeableList, SwipeableListItem } from 'react-swipeable-list';
+import 'react-swipeable-list/dist/styles.css';
 
 const parseList = (value: string): string[] => {
   return value
@@ -26,6 +28,36 @@ const parseTime = (val: string): [number, number] => {
 };
 import { Recipe } from '../types';
 
+const ingredientEmojis: Record<string, string> = {
+  banane: '🍌',
+  oeuf: '🥚',
+  oeufs: '🥚',
+  riz: '🍚',
+  pate: '🍝',
+  pâtes: '🍝',
+  tomate: '🍅',
+  poulet: '🍗'
+};
+
+const getEmoji = (name: string) => {
+  const key = Object.keys(ingredientEmojis).find(k =>
+    name.toLowerCase().includes(k)
+  );
+  return key ? ingredientEmojis[key] : '🥄';
+};
+
+const parseIngredient = (ing: string) => {
+  const match = ing.match(/^(\d+[a-zA-Z]*)\s+(.+)/);
+  if (match) {
+    return (
+      <>
+        <b>{match[1]}</b> {match[2]}
+      </>
+    );
+  }
+  return ing;
+};
+
 interface Props {
   onAdd: (r: Recipe) => void;
   onClose: () => void;
@@ -38,7 +70,8 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
-  const [ingredients, setIngredients] = useState<string[]>(['']);
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [ingredientInput, setIngredientInput] = useState('');
   const [steps, setSteps] = useState<string[]>(['']);
   const [servings, setServings] = useState('');
   const [prepTime, setPrepTime] = useState('');
@@ -50,6 +83,8 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [prepMinutes, setPrepMinutes] = useState(0);
   const [cookHours, setCookHours] = useState(0);
   const [cookMinutes, setCookMinutes] = useState(0);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const toggleCategory = (c: string) => {
     setCategories(prev =>
@@ -64,23 +99,51 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     }
   };
 
-  const addIngredient = () => setIngredients([...ingredients, '']);
   const updateIngredient = (i: number, v: string) => {
     const arr = [...ingredients];
     arr[i] = v;
     setIngredients(arr);
   };
-  const handleIngredientBlur = (i: number) => {
-    const items = parseList(ingredients[i]);
-    if (items.length > 1) {
-      const arr = [...ingredients];
-      arr.splice(i, 1, ...items);
-      setIngredients(arr);
-    } else {
-      const arr = [...ingredients];
-      arr[i] = items[0] || '';
-      setIngredients(arr);
+
+  const addIngredientsFromInput = () => {
+    const items = ingredientInput
+      .split(/[\n,;]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (items.length) {
+      setIngredients([...ingredients, ...items]);
+      setIngredientInput('');
     }
+  };
+
+  const removeIngredient = (index: number) => {
+    setIngredients(ingredients.filter((_, i) => i !== index));
+  };
+
+  const startDictation = () => {
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) return;
+    const recognition = new SpeechRecognitionClass();
+    recognitionRef.current = recognition;
+    recognition.lang = 'fr-FR';
+    recognition.interimResults = false;
+    recognition.onresult = (e: any) => {
+      const transcript = Array.from(e.results)
+        .map((r: any) => r[0].transcript)
+        .join(' ');
+      setIngredientInput(prev => (prev ? prev + ' ' : '') + transcript);
+    };
+    recognition.onend = () => {
+      setListening(false);
+      addIngredientsFromInput();
+    };
+    setListening(true);
+    recognition.start();
+  };
+
+  const stopDictation = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
   };
 
   const addStep = () => setSteps([...steps, '']);
@@ -122,6 +185,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    addIngredientsFromInput();
     const recipe: Recipe = {
       id: Date.now().toString(),
       name,
@@ -214,29 +278,56 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Ingrédients</label>
-            {ingredients.map((ing, i) => (
+            <SwipeableList>
+              {ingredients.map((ing, i) => (
+                <SwipeableListItem
+                  key={i}
+                  swipeLeft={{
+                    content: (
+                      <div className="flex items-center justify-end pr-4 bg-red-600 text-white h-full">
+                        <Trash />
+                      </div>
+                    ),
+                    action: () => removeIngredient(i)
+                  }}
+                >
+                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2">
+                    <span>{getEmoji(ing)}</span>
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => updateIngredient(i, e.currentTarget.textContent || '')}
+                      className="flex-1 text-white outline-none"
+                    >
+                      {parseIngredient(ing)}
+                    </div>
+                  </div>
+                </SwipeableListItem>
+              ))}
+            </SwipeableList>
+            <div className="flex items-center gap-2 mt-2">
               <input
-                key={i}
-                value={ing}
-                onChange={e => updateIngredient(i, e.target.value)}
-                onBlur={() => handleIngredientBlur(i)}
+                value={ingredientInput}
+                onChange={e => setIngredientInput(e.target.value)}
+                onBlur={addIngredientsFromInput}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    handleIngredientBlur(i);
+                    addIngredientsFromInput();
                   }
                 }}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
-                placeholder="Ajouter un ingrédient..."
+                placeholder="Ajouter un ingrédient ou en coller plusieurs"
+                className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
               />
-            ))}
-            <button
-              type="button"
-              onClick={addIngredient}
-              className="mt-2 text-blue-400 font-semibold"
-            >
-              + Ajouter un ingrédient
-            </button>
+              <button
+                type="button"
+                onClick={listening ? stopDictation : startDictation}
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#232832] text-white"
+                aria-label="Dictée"
+              >
+                <Mic className={listening ? 'text-blue-400' : ''} size={20} />
+              </button>
+            </div>
           </div>
 
           <div className="mb-4">
@@ -303,11 +394,14 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPortion(false)}>
             <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
               <h3 className="text-white font-semibold mb-2">Portions</h3>
+              <p className="text-xs text-gray-400 mb-2">
+                Il est utilisé pour mettre à l’échelle la recette et calculer la valeur nutritive par portion.
+              </p>
               <input
                 type="number"
                 min={1}
-                max={99}
-                value={servings || 0}
+                max={25}
+                value={servings || ''}
                 onChange={e => setServings(e.target.value)}
                 className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
               />
@@ -322,6 +416,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPrep(false)}>
             <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
               <h3 className="text-white font-semibold mb-2">Temps de préparation</h3>
+              <p className="text-xs text-gray-400 mb-2">Combien de temps faut-il pour préparer cette recette ?</p>
               <div className="flex gap-2 mb-4">
                 <select value={prepHours} onChange={e => setPrepHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
                   {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
@@ -341,6 +436,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCook(false)}>
             <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
               <h3 className="text-white font-semibold mb-2">Temps de cuisson</h3>
+              <p className="text-xs text-gray-400 mb-2">Combien de temps faut-il pour cuisiner cette recette ?</p>
               <div className="flex gap-2 mb-4">
                 <select value={cookHours} onChange={e => setCookHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
                   {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
