@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, X, Mic, Trash } from 'lucide-react';
+import { Camera, X, Mic, Trash, Check } from 'lucide-react';
 import { SwipeableList, SwipeableListItem } from 'react-swipeable-list';
 import 'react-swipeable-list/dist/styles.css';
 
@@ -29,7 +29,7 @@ const parseIngredientsInput = (value: string): string[] => {
   let text = replaceNumberWords(value.toLowerCase());
   text = text.replace(/grammes?|gramme|grams?|gr\b/gi, 'g');
   text = text.replace(/[;,]/g, '\n');
-  text = text.replace(/\b(?:et|puis)\b/gi, '\n');
+  text = text.replace(/\b(?:et|puis|ensuite|apres|après|alors)\b/gi, '\n');
   text = text.replace(/(\d+\s*(?:kg|g|ml|cl|l)?)/g, '\n$1');
   const items = text
     .split(/\n+/)
@@ -43,7 +43,7 @@ const parseInstructionsInput = (value: string): string[] => {
   return value
     .replace(/\r/g, '')
     .replace(/(\d+\.|;)/g, '\n')
-    .replace(/\b(?:puis|ensuite|apres|après)\b/gi, '\n')
+    .replace(/\b(?:puis|ensuite|apres|après|alors|etape(?:\s+suivante)?)\b/gi, '\n')
     .replace(/[.]/g, '\n')
     .split(/\n+/)
     .map((s) => s.trim())
@@ -72,7 +72,13 @@ const ingredientEmojis: Record<string, string> = {
   pate: '🍝',
   pâtes: '🍝',
   tomate: '🍅',
-  poulet: '🍗'
+  poulet: '🍗',
+  carotte: '🥕',
+  oignon: '🧅',
+  lait: '🥛',
+  beurre: '🧈',
+  sucre: '🍬',
+  farine: '🌾'
 };
 
 const getEmoji = (name: string) => {
@@ -120,8 +126,8 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [prepMinutes, setPrepMinutes] = useState(0);
   const [cookHours, setCookHours] = useState(0);
   const [cookMinutes, setCookMinutes] = useState(0);
-  const [listeningIng, setListeningIng] = useState(false);
-  const [listeningStep, setListeningStep] = useState(false);
+  const [recordingTarget, setRecordingTarget] = useState<'ing' | 'step' | null>(null);
+  const [dictationText, setDictationText] = useState('');
   const ingRecRef = useRef<SpeechRecognition | null>(null);
   const stepRecRef = useRef<SpeechRecognition | null>(null);
 
@@ -161,40 +167,41 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionClass) return;
     const recognition = new SpeechRecognitionClass();
-    if (target === 'ing') ingRecRef.current = recognition; else stepRecRef.current = recognition;
     recognition.lang = 'fr-FR';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    setDictationText('');
+    setRecordingTarget(target);
+    if (target === 'ing') ingRecRef.current = recognition; else stepRecRef.current = recognition;
     recognition.onresult = (e: any) => {
       const transcript = Array.from(e.results)
         .map((r: any) => r[0].transcript)
         .join(' ');
-      if (target === 'ing') {
-        setIngredientInput((prev) => (prev ? prev + ' ' : '') + transcript);
-      } else {
-        setStepInput((prev) => (prev ? prev + ' ' : '') + transcript);
-      }
+      setDictationText(transcript);
     };
     recognition.onend = () => {
-      if (target === 'ing') {
-        setListeningIng(false);
-        addIngredientsFromInput();
-      } else {
-        setListeningStep(false);
-        addStepsFromInput();
-      }
+      if (recordingTarget) recognition.start();
     };
-    if (target === 'ing') setListeningIng(true); else setListeningStep(true);
     recognition.start();
   };
 
-  const stopDictation = (target: 'ing' | 'step') => {
-    if (target === 'ing') {
+  const finishDictation = (accept: boolean) => {
+    if (recordingTarget === 'ing') {
       ingRecRef.current?.stop();
-      setListeningIng(false);
-    } else {
+    } else if (recordingTarget === 'step') {
       stepRecRef.current?.stop();
-      setListeningStep(false);
     }
+    if (accept && dictationText.trim()) {
+      if (recordingTarget === 'ing') {
+        setIngredientInput((prev) => (prev ? prev + ' ' : '') + dictationText.trim());
+        addIngredientsFromInput();
+      } else if (recordingTarget === 'step') {
+        setStepInput((prev) => (prev ? prev + ' ' : '') + dictationText.trim());
+        addStepsFromInput();
+      }
+    }
+    setRecordingTarget(null);
+    setDictationText('');
   };
 
   const addStep = () => setSteps([...steps, '']);
@@ -381,11 +388,11 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
               />
               <button
                 type="button"
-                onClick={listeningIng ? () => stopDictation('ing') : () => startDictation('ing')}
+                onClick={() => startDictation('ing')}
                 className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#232832] text-white"
                 aria-label="Dictée"
               >
-                <Mic className={listeningIng ? 'text-blue-400' : ''} size={20} />
+                <Mic className={recordingTarget === 'ing' ? 'animate-pulse text-blue-400' : ''} size={20} />
               </button>
             </div>
           </div>
@@ -393,42 +400,32 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Instructions</label>
             {steps.map((step, i) => (
-              <input
+              <textarea
                 key={i}
                 value={step}
                 onChange={e => updateStep(i, e.target.value)}
                 onBlur={() => handleStepBlur(i)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleStepBlur(i);
-                  }
-                }}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
+                rows={2}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2 whitespace-pre-line break-words overflow-x-hidden"
                 placeholder={`Étape ${i + 1}`}
               />
             ))}
             <div className="flex items-center gap-2 mt-2">
-              <input
+              <textarea
                 value={stepInput}
                 onChange={e => setStepInput(e.target.value)}
                 onBlur={addStepsFromInput}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addStepsFromInput();
-                  }
-                }}
+                rows={2}
                 placeholder="Ajouter une étape ou plusieurs"
-                className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
+                className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2 whitespace-pre-line break-words overflow-x-hidden"
               />
               <button
                 type="button"
-                onClick={listeningStep ? () => stopDictation('step') : () => startDictation('step')}
+                onClick={() => startDictation('step')}
                 className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#232832] text-white"
                 aria-label="Dictée"
               >
-                <Mic className={listeningStep ? 'text-blue-400' : ''} size={20} />
+                <Mic className={recordingTarget === 'step' ? 'animate-pulse text-blue-400' : ''} size={20} />
               </button>
             </div>
             <button
@@ -532,6 +529,32 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 <button onClick={() => setShowCook(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
                 <button onClick={() => {setCookTime(formatTime(cookHours, cookMinutes));setShowCook(false);}} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
               </div>
+            </div>
+          </div>
+        )}
+        {recordingTarget && (
+          <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center space-y-4 z-50">
+            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center animate-pulse">
+              <Mic className="text-white" />
+            </div>
+            {dictationText && (
+              <p className="text-white max-w-xs text-center px-4 whitespace-pre-line break-words">{dictationText}</p>
+            )}
+            <div className="flex gap-6">
+              <button
+                type="button"
+                onClick={() => finishDictation(false)}
+                className="p-3 rounded-full bg-red-600 text-white"
+              >
+                <X />
+              </button>
+              <button
+                type="button"
+                onClick={() => finishDictation(true)}
+                className="p-3 rounded-full bg-green-600 text-white"
+              >
+                <Check />
+              </button>
             </div>
           </div>
         )}
