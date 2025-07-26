@@ -204,7 +204,6 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     setDictationText('');
   };
 
-  const addStep = () => setSteps([...steps, '']);
   const updateStep = (i: number, v: string) => {
     const arr = [...steps];
     arr[i] = v;
@@ -345,6 +344,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Ingrédients</label>
+            <p className="text-xs text-gray-400 mb-1">Appuyez pour modifier, balayez pour supprimer</p>
             <SwipeableList>
               {ingredients.map((ing, i) => (
                 <SwipeableListItem
@@ -399,25 +399,46 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Instructions</label>
-            {steps.map((step, i) => (
-              <textarea
-                key={i}
-                value={step}
-                onChange={e => updateStep(i, e.target.value)}
-                onBlur={() => handleStepBlur(i)}
-                rows={2}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2 whitespace-pre-line break-words overflow-x-hidden"
-                placeholder={`Étape ${i + 1}`}
-              />
-            ))}
+            <SwipeableList>
+              {steps.map((step, i) => (
+                <SwipeableListItem
+                  key={i}
+                  swipeLeft={{
+                    content: (
+                      <div className="flex items-center justify-end pr-4 bg-red-600 text-white h-full">
+                        <Trash />
+                      </div>
+                    ),
+                    action: () => setSteps(steps.filter((_, idx) => idx !== i))
+                  }}
+                >
+                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2">
+                    <span className="text-gray-400" style={{minWidth:'1.5rem'}}>{i + 1}.</span>
+                    <input
+                      type="text"
+                      value={step}
+                      onChange={e => updateStep(i, e.target.value)}
+                      onBlur={() => handleStepBlur(i)}
+                      className="flex-1 bg-transparent text-white outline-none"
+                      placeholder={`Étape ${i + 1}`}
+                    />
+                  </div>
+                </SwipeableListItem>
+              ))}
+            </SwipeableList>
             <div className="flex items-center gap-2 mt-2">
-              <textarea
+              <input
                 value={stepInput}
                 onChange={e => setStepInput(e.target.value)}
                 onBlur={addStepsFromInput}
-                rows={2}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addStepsFromInput();
+                  }
+                }}
                 placeholder="Ajouter une étape ou plusieurs"
-                className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2 whitespace-pre-line break-words overflow-x-hidden"
+                className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
               />
               <button
                 type="button"
@@ -428,13 +449,6 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 <Mic className={recordingTarget === 'step' ? 'animate-pulse text-blue-400' : ''} size={20} />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={addStep}
-              className="mt-2 text-blue-400 font-semibold"
-            >
-              + Ajouter une étape
-            </button>
           </div>
 
           <div className="space-y-4">
@@ -453,7 +467,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Il est utilisé pour mettre à l’échelle la recette et calculer la valeur nutritive par portion.
+                Sélectionnez le nombre de portions que cette recette permet de réaliser
               </p>
             </div>
 
@@ -507,31 +521,23 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
             >
               <h3 className="text-white font-semibold mb-2">Portions</h3>
               <p className="text-xs text-gray-400 mb-2">
-                Il est utilisé pour mettre à l’échelle la recette et calculer la valeur nutritive par portion.
+                Sélectionnez le nombre de portions que cette recette permet de réaliser
               </p>
               <select
                 value={servings || ''}
                 onChange={e => setServings(e.target.value)}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
               >
-                {Array.from({ length: 25 }, (_, i) => i + 1).map(n => (
+                {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
                   <option key={n} value={n}>
                     {n}
                   </option>
                 ))}
               </select>
-              <input
-                type="number"
-                min={1}
-                value={servings || ''}
-                onChange={e => setServings(e.target.value)}
-                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
-                placeholder="Autre valeur"
-              />
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-4">
                 <button
                   onClick={() => setShowPortion(false)}
-                  className="px-3 py-1 border rounded text-white"
+                  className="text-gray-400 text-sm"
                 >
                   Annuler
                 </button>
@@ -556,7 +562,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                   onChange={e => setPrepHours(parseInt(e.target.value))}
                   className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
                 >
-                  {Array.from({ length: 24 }).map((_, i) => (
+                  {Array.from({ length: 13 }).map((_, i) => (
                     <option key={i} value={i}>
                       {i}h
                     </option>
@@ -566,8 +572,8 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                   {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
                 </select>
               </div>
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowPrep(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
+              <div className="flex justify-end gap-4">
+                <button onClick={() => setShowPrep(false)} className="text-gray-400 text-sm">Annuler</button>
                 <button onClick={() => {setPrepTime(formatTime(prepHours, prepMinutes));setShowPrep(false);}} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
               </div>
             </div>
@@ -584,7 +590,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                   onChange={e => setCookHours(parseInt(e.target.value))}
                   className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
                 >
-                  {Array.from({ length: 24 }).map((_, i) => (
+                  {Array.from({ length: 13 }).map((_, i) => (
                     <option key={i} value={i}>
                       {i}h
                     </option>
@@ -594,8 +600,8 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                   {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
                 </select>
               </div>
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowCook(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
+              <div className="flex justify-end gap-4">
+                <button onClick={() => setShowCook(false)} className="text-gray-400 text-sm">Annuler</button>
                 <button onClick={() => {setCookTime(formatTime(cookHours, cookMinutes));setShowCook(false);}} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
               </div>
             </div>
