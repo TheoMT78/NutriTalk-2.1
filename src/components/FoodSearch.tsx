@@ -25,7 +25,6 @@ interface FoodSearchProps {
 
 const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedMeal, setSelectedMeal] = useState<'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation'>('déjeuner');
   const [showFavorites, setShowFavorites] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -106,9 +105,8 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
   }, [searchTerm, fuse, normalizedFoods]);
 
   const filteredFoods = searchResults.filter((food) => {
-    const matchesCategory = selectedCategory ? food.category === selectedCategory : true;
     const matchesFavorites = showFavorites ? favorites.includes(food.id) : true;
-    return matchesCategory && matchesFavorites;
+    return matchesFavorites;
   });
 
   useEffect(() => {
@@ -141,7 +139,6 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     fetchExternal();
   }, [searchTerm, filteredFoods.length]);
 
-  const categories = [...new Set(allFoods.map(food => food.category))];
 
   const [newFood, setNewFood] = useState({
     name: '',
@@ -269,7 +266,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
 
       {/* Filtres */}
       <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Recherche */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -282,29 +279,17 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
             />
           </div>
 
-          {/* Catégorie */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-          >
-            <option value="">Toutes les catégories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-
           {/* Favoris */}
           <button
             onClick={() => setShowFavorites(!showFavorites)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
+            className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors duration-200 ${
               showFavorites
                 ? 'bg-yellow-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            <Star size={20} />
-            <span>Favoris</span>
+            <Star className="w-4 h-4" />
+            <span className="hidden sm:inline">Favoris</span>
           </button>
         </div>
       </div>
