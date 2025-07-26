@@ -437,57 +437,110 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
             </button>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between py-1">
-              <span className="font-semibold text-white">Portions</span>
-              <button
-                type="button"
-                onClick={openPortionModal}
-                className="text-blue-400 font-bold"
-              >
-                Définir
-              </button>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-white">Portions</span>
+                  {servings && <span className="text-gray-300">{servings}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={openPortionModal}
+                  className="text-blue-400 font-bold"
+                >
+                  Définir
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Il est utilisé pour mettre à l’échelle la recette et calculer la valeur nutritive par portion.
+              </p>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="font-semibold text-white">Temps de préparation</span>
-              <button
-                type="button"
-                onClick={openPrepModal}
-                className="text-blue-400 font-bold"
-              >
-                Régler le temps
-              </button>
+
+            <div>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-white">Temps de préparation</span>
+                  {prepTime && <span className="text-gray-300">{prepTime}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={openPrepModal}
+                  className="text-blue-400 font-bold"
+                >
+                  Régler le temps
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Combien de temps faut-il pour préparer cette recette ?
+              </p>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="font-semibold text-white">Temps de cuisson</span>
-              <button
-                type="button"
-                onClick={openCookModal}
-                className="text-blue-400 font-bold"
-              >
-                Régler le temps
-              </button>
+
+            <div>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-white">Temps de cuisson</span>
+                  {cookTime && <span className="text-gray-300">{cookTime}</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={openCookModal}
+                  className="text-blue-400 font-bold"
+                >
+                  Régler le temps
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Combien de temps faut-il pour cuisiner cette recette ?
+              </p>
             </div>
           </div>
         </form>
         {showPortion && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowPortion(false)}>
-            <div className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setShowPortion(false)}
+          >
+            <div
+              className="bg-[#222B3A] rounded-xl p-4 w-full max-w-xs"
+              onClick={e => e.stopPropagation()}
+            >
               <h3 className="text-white font-semibold mb-2">Portions</h3>
               <p className="text-xs text-gray-400 mb-2">
                 Il est utilisé pour mettre à l’échelle la recette et calculer la valeur nutritive par portion.
               </p>
+              <select
+                value={servings || ''}
+                onChange={e => setServings(e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
+              >
+                {Array.from({ length: 25 }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
               <input
                 type="number"
                 min={1}
-                max={25}
                 value={servings || ''}
                 onChange={e => setServings(e.target.value)}
                 className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
+                placeholder="Autre valeur"
               />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setShowPortion(false)} className="px-3 py-1 border rounded text-white">Annuler</button>
-                <button onClick={() => setShowPortion(false)} className="px-3 py-1 bg-blue-600 text-white rounded">Enregistrer</button>
+                <button
+                  onClick={() => setShowPortion(false)}
+                  className="px-3 py-1 border rounded text-white"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => setShowPortion(false)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded"
+                >
+                  Enregistrer
+                </button>
               </div>
             </div>
           </div>
@@ -498,8 +551,16 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
               <h3 className="text-white font-semibold mb-2">Temps de préparation</h3>
               <p className="text-xs text-gray-400 mb-2">Combien de temps faut-il pour préparer cette recette ?</p>
               <div className="flex gap-2 mb-4">
-                <select value={prepHours} onChange={e => setPrepHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
-                  {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
+                <select
+                  value={prepHours}
+                  onChange={e => setPrepHours(parseInt(e.target.value))}
+                  className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
+                >
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {i}h
+                    </option>
+                  ))}
                 </select>
                 <select value={prepMinutes} onChange={e => setPrepMinutes(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
                   {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
@@ -518,8 +579,16 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
               <h3 className="text-white font-semibold mb-2">Temps de cuisson</h3>
               <p className="text-xs text-gray-400 mb-2">Combien de temps faut-il pour cuisiner cette recette ?</p>
               <div className="flex gap-2 mb-4">
-                <select value={cookHours} onChange={e => setCookHours(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
-                  {Array.from({ length: 6 }).map((_,i)=>(<option key={i} value={i}>{i}h</option>))}
+                <select
+                  value={cookHours}
+                  onChange={e => setCookHours(parseInt(e.target.value))}
+                  className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2"
+                >
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {i}h
+                    </option>
+                  ))}
                 </select>
                 <select value={cookMinutes} onChange={e => setCookMinutes(parseInt(e.target.value))} className="flex-1 rounded-lg bg-[#232832] text-white px-3 py-2">
                   {Array.from({ length: 60 }).map((_,i)=>(<option key={i} value={i}>{i}m</option>))}
