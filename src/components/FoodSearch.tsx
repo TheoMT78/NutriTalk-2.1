@@ -268,29 +268,25 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       <div className="bg-[#222B3A] rounded-2xl p-6 shadow-md">
         <div className="flex flex-wrap items-center gap-2">
           {/* Recherche */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Rechercher un aliment..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-            />
+          <div className="flex flex-1">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Rechercher un aliment..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
+              />
+            </div>
+            <button
+              onClick={() => setShowFavorites(!showFavorites)}
+              className="w-10 h-10 flex items-center justify-center rounded-r-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-yellow-400"
+              aria-label="Favoris"
+            >
+              <Star size={20} fill={showFavorites ? 'currentColor' : 'none'} />
+            </button>
           </div>
-
-          {/* Favoris */}
-          <button
-            onClick={() => setShowFavorites(!showFavorites)}
-            className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors duration-200 ${
-              showFavorites
-                ? 'bg-yellow-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            <Star className="w-4 h-4" />
-            <span className="hidden sm:inline">Favoris</span>
-          </button>
         </div>
       </div>
 
