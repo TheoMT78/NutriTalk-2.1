@@ -17,10 +17,10 @@ const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange }) => {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white min-h-[96px]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 64px)' }}
     >
-      <nav className="flex justify-around py-2 pb-[64px]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 64px)' }}>
+      <nav className="flex justify-around pt-6 pb-4">
         {navItems.map(item => {
           const Icon = item.icon;
           const active = currentView === item.id;
