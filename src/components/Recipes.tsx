@@ -9,16 +9,22 @@ const defaultRecipes: Recipe[] = [
   {
     id: '1',
     name: 'Salade quinoa avocat',
-    image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+    description: 'Un plat frais et complet',
+    image:
+      'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
     categories: ['Déjeuner'],
     prepTime: '20 min',
+    cookTime: '0 min',
     servings: 2,
     calories: 420,
     protein: 18,
     carbs: 65,
     fat: 12,
-    ingredients: ['200g quinoa', '1 avocat', 'tomates', 'huile d\'olive'],
-    instructions: 'Cuire le quinoa puis mélanger avec les légumes et l\'huile.'
+    ingredients: ['200g quinoa', '1 avocat', 'tomates', "huile d'olive"],
+    instructions: [
+      'Cuire le quinoa',
+      "Mélanger avec les légumes et l'huile"
+    ]
   }
 ];
 

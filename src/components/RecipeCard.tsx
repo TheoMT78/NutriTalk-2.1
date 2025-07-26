@@ -36,9 +36,10 @@ const RecipeCard: React.FC<Props> = ({ recipe, onAdd, onSelect }) => {
           </button>
         )}
       </div>
-      {(recipe.prepTime || recipe.servings) && (
+      {(recipe.prepTime || recipe.cookTime || recipe.servings) && (
         <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
           {recipe.prepTime && <span>⏰ {recipe.prepTime}</span>}
+          {recipe.cookTime && <span>🔥 {recipe.cookTime}</span>}
           {recipe.servings && <span>👥 {recipe.servings} pers.</span>}
         </div>
       )}

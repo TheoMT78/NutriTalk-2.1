@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 import { Recipe } from '../types';
 
 interface Props {
@@ -7,25 +7,44 @@ interface Props {
   onClose: () => void;
 }
 
-const categories = ['Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
+const mealCategories = ['Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
 
 const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
-  const [prepTime, setPrepTime] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [ingredients, setIngredients] = useState<string[]>(['']);
+  const [steps, setSteps] = useState<string[]>(['']);
   const [servings, setServings] = useState('');
-  const [calories, setCalories] = useState('');
-  const [protein, setProtein] = useState('');
-  const [carbs, setCarbs] = useState('');
-  const [fat, setFat] = useState('');
-  const [ingredients, setIngredients] = useState('');
-  const [instructions, setInstructions] = useState('');
+  const [prepTime, setPrepTime] = useState('');
+  const [cookTime, setCookTime] = useState('');
 
-  const toggleCat = (c: string) => {
-    setSelected(prev =>
+  const toggleCategory = (c: string) => {
+    setCategories(prev =>
       prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
     );
+  };
+
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(URL.createObjectURL(file));
+    }
+  };
+
+  const addIngredient = () => setIngredients([...ingredients, '']);
+  const updateIngredient = (i: number, v: string) => {
+    const arr = [...ingredients];
+    arr[i] = v;
+    setIngredients(arr);
+  };
+
+  const addStep = () => setSteps([...steps, '']);
+  const updateStep = (i: number, v: string) => {
+    const arr = [...steps];
+    arr[i] = v;
+    setSteps(arr);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,163 +52,164 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     const recipe: Recipe = {
       id: Date.now().toString(),
       name,
+      description: description || undefined,
       image: image || undefined,
-      categories: selected,
-      prepTime: prepTime || undefined,
+      categories,
+      ingredients: ingredients.filter(Boolean),
+      instructions: steps.filter(Boolean),
       servings: servings ? parseInt(servings, 10) : undefined,
-      calories: calories ? parseFloat(calories) : undefined,
-      protein: protein ? parseFloat(protein) : undefined,
-      carbs: carbs ? parseFloat(carbs) : undefined,
-      fat: fat ? parseFloat(fat) : undefined,
-      ingredients: ingredients.split('\n').map(s => s.trim()).filter(Boolean),
-      instructions,
+      prepTime: prepTime || '0',
+      cookTime: cookTime || '0'
     };
     onAdd(recipe);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#222B3A] rounded-2xl p-6 w-full max-w-md shadow-md overflow-y-auto max-h-[90vh]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Ajouter une recette</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
-            <X size={20} />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70">
+      <div className="bg-[#181D24] min-h-screen px-4 pt-4 pb-10">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Nom</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Image (URL)</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-              value={image}
-              onChange={e => setImage(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categories.map(c => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => toggleCat(c)}
-                className={`px-3 py-1 rounded-lg text-sm ${
-                  selected.includes(c)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Préparation</label>
-              <input
-                type="text"
-                value={prepTime}
-                onChange={e => setPrepTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Portions</label>
-              <input
-                type="number"
-                value={servings}
-                onChange={e => setServings(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-                min="1"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            <div>
-              <label className="block text-xs font-medium mb-1">kcal</label>
-              <input
-                type="number"
-                value={calories}
-                onChange={e => setCalories(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                min="0"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">Prot (g)</label>
-              <input
-                type="number"
-                value={protein}
-                onChange={e => setProtein(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                min="0"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">Gluc (g)</label>
-              <input
-                type="number"
-                value={carbs}
-                onChange={e => setCarbs(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                min="0"
-                step="0.1"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1">Lip (g)</label>
-              <input
-                type="number"
-                value={fat}
-                onChange={e => setFat(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-                min="0"
-                step="0.1"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Ingrédients (une ligne par ingrédient)</label>
-            <textarea
-              value={ingredients}
-              onChange={e => setIngredients(e.target.value)}
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Instructions</label>
-            <textarea
-              value={instructions}
-              onChange={e => setInstructions(e.target.value)}
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700"
-            />
-          </div>
-          <div className="flex space-x-3">
+          <div className="flex items-center justify-between mb-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+              className="text-gray-400 p-2"
+              aria-label="Fermer"
             >
-              Annuler
+              <X />
             </button>
+            <h2 className="text-white text-xl font-bold flex-1 text-center">
+              Ajouter une recette
+            </h2>
             <button
               type="submit"
-              className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200"
+              className="bg-blue-600 text-white rounded-full px-6 py-2 font-semibold"
             >
-              Ajouter
+              Enregistrer
             </button>
+          </div>
+
+          <label
+            htmlFor="cover"
+            className="w-full bg-[#232832] rounded-xl py-6 flex flex-col items-center mb-5 border-2 border-dashed border-blue-600 text-blue-400 cursor-pointer"
+          >
+            {image ? (
+              <img
+                src={image}
+                alt="aperçu"
+                className="w-full h-40 object-cover rounded-lg"
+              />
+            ) : (
+              <>
+                <Camera className="mb-2" />
+                Ajouter une photo de couverture
+              </>
+            )}
+          </label>
+          <input id="cover" type="file" accept="image/*" onChange={handleImage} className="hidden" />
+
+          <input
+            className="w-full rounded-lg bg-[#232832] text-white px-4 py-3 placeholder-gray-400"
+            placeholder="Titre de la recette"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+          />
+          <textarea
+            className="w-full rounded-lg bg-[#232832] text-white px-4 py-3 placeholder-gray-400"
+            placeholder="Description (optionnel)"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {mealCategories.map(cat => (
+              <button
+                type="button"
+                key={cat}
+                onClick={() => toggleCategory(cat)}
+                className={`px-3 py-2 rounded-xl border text-sm whitespace-nowrap ${
+                  categories.includes(cat)
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-[#232832] border-gray-600 text-white'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-white font-semibold mb-1">Ingrédients</label>
+            {ingredients.map((ing, i) => (
+              <input
+                key={i}
+                value={ing}
+                onChange={e => updateIngredient(i, e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
+                placeholder="Ajouter un ingrédient..."
+              />
+            ))}
+            <button
+              type="button"
+              onClick={addIngredient}
+              className="mt-2 text-blue-400 font-semibold"
+            >
+              + Ajouter un ingrédient
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-white font-semibold mb-1">Instructions</label>
+            {steps.map((step, i) => (
+              <input
+                key={i}
+                value={step}
+                onChange={e => updateStep(i, e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-2"
+                placeholder={`Étape ${i + 1}`}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={addStep}
+              className="mt-2 text-blue-400 font-semibold"
+            >
+              + Ajouter une étape
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-white mb-1">Portions</label>
+              <input
+                type="number"
+                min={1}
+                value={servings}
+                onChange={e => setServings(e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-white mb-1">Préparation</label>
+              <input
+                type="number"
+                min={0}
+                value={prepTime}
+                onChange={e => setPrepTime(e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-white mb-1">Cuisson</label>
+              <input
+                type="number"
+                min={0}
+                value={cookTime}
+                onChange={e => setCookTime(e.target.value)}
+                className="w-full rounded-lg bg-[#232832] text-white px-3 py-2"
+              />
+            </div>
           </div>
         </form>
       </div>
@@ -198,3 +218,4 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 };
 
 export default RecipeForm;
+
