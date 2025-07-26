@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, BookOpen, BarChart3, UserCircle } from 'lucide-react';
+import { Home, Search, ChefHat, BarChart3, UserCircle } from 'lucide-react';
 
 interface TabBarProps {
   currentView: string;
@@ -10,7 +10,7 @@ const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange }) => {
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'search', label: 'Recherche', icon: Search },
-    { id: 'recipes', label: 'Recette', icon: BookOpen },
+    { id: 'recipes', label: 'Recettes', icon: ChefHat },
     { id: 'history', label: 'Historique', icon: BarChart3 },
     { id: 'profile', label: 'Profil', icon: UserCircle }
   ];

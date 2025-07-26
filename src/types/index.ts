@@ -82,7 +82,19 @@ export interface Recipe {
   name: string;
   ingredients: string[];
   instructions: string;
+  /** URL de la photo */
+  image?: string;
+  /** Catégories sélectionnées (Petit-déj, Déjeuner…) */
+  categories?: string[];
+  /** Temps de préparation, ex "25 min" */
   prepTime?: string;
+  /** Nombre de portions */
+  servings?: number;
+  /** Valeurs nutritionnelles pour une portion */
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   fridgeLife?: string;
   freezerLife?: string;
 }

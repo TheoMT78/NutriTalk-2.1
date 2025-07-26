@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Sun, Moon, Home, Search, BarChart3, UserCircle, BookOpen } from 'lucide-react';
+import { Bell, Sun, Moon, Home, Search, BarChart3, UserCircle, ChefHat } from 'lucide-react';
 interface HeaderProps {
   currentView: string;
   onViewChange: (view: string) => void;
@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'search', label: 'Recherche', icon: Search },
-    { id: 'recipes', label: 'Recette', icon: BookOpen },
+    { id: 'recipes', label: 'Recettes', icon: ChefHat },
     { id: 'history', label: 'Historique', icon: BarChart3 },
     { id: 'profile', label: 'Profil', icon: UserCircle },
   ];
