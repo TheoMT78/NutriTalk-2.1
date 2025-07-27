@@ -29,7 +29,7 @@ const defaultRecipes: Recipe[] = [
   }
 ];
 
-const catOptions = ['Toutes', 'Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
+const catOptions = ['Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
 
 const Recipes: React.FC = () => {
   const [recipes, setRecipes] = useLocalStorage<Recipe[]>('nutritalk-recipes', defaultRecipes);
@@ -130,13 +130,22 @@ const Recipes: React.FC = () => {
             />
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex gap-2 pt-2 overflow-x-auto whitespace-nowrap">
+          {cats.length > 0 && (
+            <button
+              key="Toutes"
+              onClick={() => toggleCat('Toutes')}
+              className="px-3 py-1 rounded-lg text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+            >
+              Toutes
+            </button>
+          )}
           {catOptions.map(c => (
             <button
               key={c}
               onClick={() => toggleCat(c)}
               className={`px-3 py-1 rounded-lg text-sm ${
-                (c === 'Toutes' && cats.length === 0) || cats.includes(c)
+                cats.includes(c)
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
               }`}

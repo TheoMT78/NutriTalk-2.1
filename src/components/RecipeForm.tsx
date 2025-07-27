@@ -436,6 +436,7 @@ const RecipeForm: React.FC<Props> = ({ onSave, onClose, initialRecipe }) => {
 
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Instructions</label>
+            <p className="text-xs text-gray-400 mb-1">Appuyer pour modifier</p>
             <SwipeableList>
               {steps.map((step, i) => (
                 <SwipeableListItem
