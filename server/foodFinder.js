@@ -3,11 +3,55 @@ import path from 'path';
 import StreamZip from 'node-stream-zip';
 import xlsx from 'xlsx';
 import removeAccents from 'remove-accents';
+import { findBestMatch } from 'string-similarity';
 
-function normalizeName(name) {
-  return removeAccents(name.toLowerCase().trim());
+// Simple synonym dictionary for common foods
+export const synonyms = {
+  oeuf: ['oeuf', 'œuf', 'oeufs', 'œufs', 'egg', 'oeuf dur', 'œuf dur', 'oeufs durs', 'œufs durs'],
+  'pomme de terre': ['pomme de terre', 'pommes de terre', 'patate', 'patates'],
+  banane: ['banane', 'bananes'],
+  fraise: ['fraise', 'fraises'],
+  'flocons d\'avoine': ['flocon d\'avoine', 'flocons d\'avoine', 'avoine']
+};
+
+// Return possible variants (synonyms) for a given name
+function getVariants(name) {
+  const norm = normalizeName(name);
+  for (const list of Object.values(synonyms)) {
+    const normalized = list.map(n => normalizeName(n));
+    if (normalized.includes(norm)) return list;
+  }
+  return [name];
 }
 
+// Normalize food names to ease comparisons
+// - remove accents
+// - unify œ/oe
+// - lowercase
+// - remove common punctuation and extra spaces
+// - strip a trailing 's' for plurals
+export function normalizeName(name) {
+  if (!name) return '';
+  let n = name.toLowerCase();
+  n = n.replace(/œ/g, 'oe');
+  n = removeAccents(n);
+  n = n.replace(/[.,;!?'"()]/g, '');
+  n = n.replace(/\s+/g, ' ').trim();
+  if (n.endsWith('s')) n = n.slice(0, -1);
+  return n;
+}
+
+const UNITS = {
+  energy_kcal: 'kcal/100g',
+  proteins_g: 'g/100g',
+  carbohydrates_g: 'g/100g',
+  fat_g: 'g/100g',
+  sugars_g: 'g/100g',
+  fiber_g: 'g/100g',
+  salt_g: 'g/100g'
+};
+
+// Map raw data from a source to the unified structure with units
 function mapResult(name, data) {
   return {
     food_name: name,
@@ -17,7 +61,8 @@ function mapResult(name, data) {
     fat_g: data.fat_g,
     sugars_g: data.sugars_g,
     fiber_g: data.fiber_g,
-    salt_g: data.salt_g
+    salt_g: data.salt_g,
+    units: UNITS
   };
 }
 
@@ -84,13 +129,23 @@ function loadCiqual() {
 export function searchCiqual(food) {
   try {
     const data = loadCiqual();
-    const norm = normalizeName(food);
-    let entry = data.find(d => d._norm === norm);
-    if (!entry) entry = data.find(d => d._norm.includes(norm));
+    const variants = getVariants(food);
+    let entry = null;
+    for (const v of variants) {
+      const n = normalizeName(v);
+      entry = data.find(d => d._norm === n) || data.find(d => d._norm.includes(n));
+      if (entry) break;
+    }
+    if (!entry) {
+      const names = data.map(d => d._norm);
+      const { bestMatch, bestMatchIndex } = findBestMatch(normalizeName(food), names);
+      if (bestMatch.rating >= 0.7) entry = data[bestMatchIndex];
+    }
     if (!entry) return null;
     const { _norm, ...rest } = entry;
-    return rest;
-  } catch {
+    return mapResult(rest.food_name, rest);
+  } catch (e) {
+    console.error(e);
     return null;
   }
 }
@@ -142,24 +197,37 @@ async function loadFineli() {
 export async function searchFineli(food) {
   try {
     const data = await loadFineli();
-    const norm = normalizeName(food);
-    let entry = data.find(d => d._norm === norm);
-    if (!entry) entry = data.find(d => d._norm.includes(norm));
+    const variants = getVariants(food);
+    let entry = null;
+    for (const v of variants) {
+      const n = normalizeName(v);
+      entry = data.find(d => d._norm === n) || data.find(d => d._norm.includes(n));
+      if (entry) break;
+    }
+    if (!entry) {
+      const names = data.map(d => d._norm);
+      const { bestMatch, bestMatchIndex } = findBestMatch(normalizeName(food), names);
+      if (bestMatch.rating >= 0.7) entry = data[bestMatchIndex];
+    }
     if (!entry) return null;
     const { _norm, ...rest } = entry;
-    return rest;
-  } catch {
+    return mapResult(rest.food_name, rest);
+  } catch (e) {
+    console.error(e);
     return null;
   }
 }
 
 // ------------------ MAIN FUNCTION ------------------
 export async function find_and_suggest_food(food_name) {
-  let res = await searchOpenFoodFacts(food_name);
-  if (isComplete(res)) return { ...res, source: 'openfoodfacts' };
-  res = searchCiqual(food_name);
-  if (res) return { ...res, source: 'ciqual' };
-  res = await searchFineli(food_name);
-  if (res) return { ...res, source: 'fineli' };
+  const variants = getVariants(food_name);
+  for (const v of variants) {
+    const res = await searchOpenFoodFacts(v);
+    if (isComplete(res)) return { ...res, source: 'openfoodfacts' };
+  }
+  const ciqualRes = searchCiqual(food_name);
+  if (ciqualRes) return { ...ciqualRes, source: 'ciqual' };
+  const fineliRes = await searchFineli(food_name);
+  if (fineliRes) return { ...fineliRes, source: 'fineli' };
   return null;
 }
