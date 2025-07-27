@@ -348,7 +348,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
 
           <div className="mb-4">
             <label className="block text-white font-semibold mb-1">Ingrédients</label>
-            <p className="text-xs text-gray-400 mb-1">Appuyez pour modifier, balayez pour supprimer</p>
+            <p className="text-xs text-gray-400 mb-1">Appuyer pour modifier</p>
             <SwipeableList>
               {ingredients.map((ing, i) => (
                 <SwipeableListItem
@@ -362,13 +362,13 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                     action: () => removeIngredient(i)
                   }}
                 >
-                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2">
+                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2 w-full">
                     <span>{getEmoji(ing)}</span>
                     <div
                       contentEditable
                       suppressContentEditableWarning
                       onBlur={e => updateIngredient(i, e.currentTarget.textContent || '')}
-                      className="flex-1 text-white outline-none"
+                      className="flex-1 text-white outline-none break-words"
                     >
                       {parseIngredient(ing)}
                     </div>
@@ -424,7 +424,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                     action: () => removeStep(i)
                   }}
                 >
-                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2">
+                  <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2 w-full">
                     <span className="text-gray-400" style={{minWidth:'1.5rem'}}>{i + 1}.</span>
                     <input
                       type="text"
