@@ -33,6 +33,22 @@ const catOptions = ['Toutes', 'Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
 
 const Recipes: React.FC = () => {
   const [recipes, setRecipes] = useLocalStorage<Recipe[]>('nutritalk-recipes', defaultRecipes);
+
+  const normalizeRecipe = (r: any): Recipe => ({
+    ...r,
+    ingredients: Array.isArray(r.ingredients)
+      ? r.ingredients
+      : r.ingredients
+      ? [r.ingredients]
+      : [],
+    instructions: Array.isArray(r.instructions)
+      ? r.instructions
+      : r.instructions
+      ? [r.instructions]
+      : []
+  });
+
+  const normRecipes = recipes.map(normalizeRecipe);
   const [search, setSearch] = useState('');
   const [cats, setCats] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -48,7 +64,7 @@ const Recipes: React.FC = () => {
     }
   };
 
-  const filtered = recipes.filter(r => {
+  const filtered = normRecipes.filter(r => {
     const matchName = r.name.toLowerCase().includes(search.toLowerCase());
     const matchCat = cats.length === 0 || r.categories?.some(c => cats.includes(c));
     return matchName && matchCat;

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
-import { X, Pencil, Minus, Plus } from 'lucide-react';
+import { X, Pencil, Minus, Plus, ChevronDown } from 'lucide-react';
 import { Recipe } from '../types';
 
 const ingredientEmojis: Record<string, string> = {
@@ -27,11 +27,39 @@ const getEmoji = (name: string) => {
 };
 
 const parseIng = (ing: string, factor: number) => {
-  const m = ing.match(/^(\d+(?:\.\d+)?)(\s*(?:kg|g|ml|cl|l)?)(.*)/i);
+  const m = ing.match(/^(\d+(?:\.\d+)?)(\s*(kg|g|ml|cl|l|oz|lb|fl\s?oz|cup)s?\b)?\s*(.*)/i);
   if (m) {
-    const qty = parseFloat(m[1]) * factor;
-    const unit = m[2] || '';
-    const rest = m[3].trim();
+    let qty = parseFloat(m[1]) * factor;
+    let unit = (m[3] || '').toLowerCase();
+    const rest = m[4].trim();
+
+    const toImperial = (q:number,u:string):[number,string] => {
+      switch(u){
+        case 'g': return [q/28.35,'oz'];
+        case 'kg': return [q*1000/453.592,'lb'];
+        case 'ml': return [q/29.5735,'fl oz'];
+        case 'l': return [q*1000/240,'cup'];
+        default: return [q,u];
+      }
+    };
+    const toMetric = (q:number,u:string):[number,string] => {
+      switch(u){
+        case 'oz': return [q*28.35,'g'];
+        case 'lb': return [q*453.592,'g'];
+        case 'fl oz': return [q*29.5735,'ml'];
+        case 'cup': return [q*240,'ml'];
+        default: return [q,u];
+      }
+    };
+
+    if(unitMode==='imperial'){
+      [qty, unit] = toImperial(qty, unit);
+    } else if(unitMode==='metric' && unit){
+      [qty, unit] = toMetric(qty, unit);
+      if(unit==='g' && qty>=1000){ qty/=1000; unit='kg'; }
+      if(unit==='ml' && qty>=1000){ qty/=1000; unit='l'; }
+    }
+
     return (
       <>
         <b>{Math.round(qty * 100) / 100}{unit}</b> {rest}
@@ -50,9 +78,13 @@ interface Props {
 const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
   const [tab, setTab] = useState<'ingredients' | 'steps' | 'score'>('ingredients');
   const [servings, setServings] = useState(recipe.servings || 1);
+  const [unitMode, setUnitMode] = useState<'original' | 'metric' | 'imperial'>('original');
+  const [showUnitMenu, setShowUnitMenu] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const factor = servings / (recipe.servings || 1);
+  const ingredientsList = Array.isArray(recipe.ingredients) ? recipe.ingredients : recipe.ingredients ? [recipe.ingredients as any] : [];
+  const instructionList = Array.isArray(recipe.instructions) ? recipe.instructions : recipe.instructions ? [recipe.instructions as any] : [];
   const parseTime = (val?: string) => {
     if (!val) return 0;
     const h = parseInt(val.match(/(\d+)h/)?.[1] || '0', 10);
@@ -119,31 +151,46 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
         {tab === 'ingredients' && (
           <div className="space-y-2">
             {recipe.description && (
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-gray-300 text-sm flex-1 break-words">{recipe.description}</p>
-                <button
-                  onClick={() => onEdit(recipe)}
-                  aria-label="Modifier"
-                  className="text-gray-400 p-1 flex-shrink-0"
-                >
-                  <Pencil size={16} />
+              <p className="text-gray-300 text-sm break-words">{recipe.description}</p>
+            )}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setServings(s => Math.max(1, s - 1))} className="p-2 bg-gray-700 rounded" aria-label="Diminuer">
+                  <Minus size={16} />
+                </button>
+                <span className="text-white">{servings} pers.</span>
+                <button onClick={() => setServings(s => s + 1)} className="p-2 bg-gray-700 rounded" aria-label="Augmenter">
+                  <Plus size={16} />
                 </button>
               </div>
-            )}
-            <ul className="space-y-1">
-              {recipe.ingredients.map((ing, i) => (
+              <div className="relative">
+                <button onClick={() => setShowUnitMenu(m => !m)} className="text-blue-400 flex items-center gap-1">
+                  Convertir les unités <ChevronDown size={16} />
+                </button>
+                {showUnitMenu && (
+                  <div className="absolute right-0 mt-1 bg-[#222B3A] rounded shadow z-10">
+                    {['original','metric','imperial'].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => {setUnitMode(opt as any); setShowUnitMenu(false);}}
+                        className={`block px-4 py-1 text-left w-full ${unitMode===opt?'bg-blue-600 text-white':'text-gray-200'}`}
+                      >
+                        {opt==='original'?'Original':opt==='metric'?'Métrique':'Impérial'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <ul className="space-y-1 pt-2">
+              {ingredientsList.map((ing, i) => (
                 <li key={i} className="flex gap-2 items-start">
                   <span>{getEmoji(ing)}</span>
                   <span className="break-words whitespace-pre-line flex-1">{parseIng(ing, factor)}</span>
                 </li>
               ))}
             </ul>
-            <div className="text-center text-sm text-gray-400 py-2 border-t border-gray-700">Ajouter à la liste de courses</div>
-            <div className="flex items-center justify-center gap-4 pt-4">
-              <button onClick={() => setServings(s => Math.max(1, s - 1))} className="p-2 bg-gray-700 rounded" aria-label="Diminuer"> <Minus size={16}/> </button>
-              <span className="text-white">{servings} pers.</span>
-              <button onClick={() => setServings(s => s + 1)} className="p-2 bg-gray-700 rounded" aria-label="Augmenter"> <Plus size={16}/> </button>
-            </div>
+            <button className="w-full mt-2 py-2 bg-blue-600 rounded text-white">Ajouter à la liste de courses</button>
           </div>
         )}
         {tab === 'steps' && (
@@ -155,8 +202,10 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
               </div>
             )}
             <ol className="space-y-2 list-decimal list-inside">
-              {recipe.instructions.map((step, i) => (
-                <li key={i} className="break-words whitespace-pre-line">{step}</li>
+              {instructionList.map((step, i) => (
+                <li key={i} className="break-words whitespace-pre-line border-b border-gray-700 pb-2">
+                  {step}
+                </li>
               ))}
             </ol>
           </div>
