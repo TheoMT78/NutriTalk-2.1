@@ -368,7 +368,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                       contentEditable
                       suppressContentEditableWarning
                       onBlur={e => updateIngredient(i, e.currentTarget.textContent || '')}
-                      className="flex-1 text-white outline-none break-words"
+                      className="flex-1 text-white outline-none break-words whitespace-pre-line"
                     >
                       {parseIngredient(ing)}
                     </div>
@@ -426,14 +426,14 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 >
                   <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2 w-full">
                     <span className="text-gray-400" style={{minWidth:'1.5rem'}}>{i + 1}.</span>
-                    <input
-                      type="text"
-                      value={step}
-                      onChange={e => updateStep(i, e.target.value)}
-                      onBlur={() => handleStepBlur(i)}
-                      className="flex-1 bg-transparent text-white outline-none"
-                      placeholder={`Étape ${i + 1}`}
-                    />
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={e => updateStep(i, e.currentTarget.textContent || '')}
+                      className="flex-1 bg-transparent text-white outline-none break-words whitespace-pre-line"
+                    >
+                      {step}
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeStep(i)}
