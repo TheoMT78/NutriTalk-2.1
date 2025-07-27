@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Props {
   show: boolean;
@@ -8,6 +8,19 @@ interface Props {
 
 const DeleteRecipeSheet: React.FC<Props> = ({ show, onClose, onDelete }) => {
   const [confirm, setConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!show) {
+      setConfirm(false);
+      return;
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [show, onClose]);
+
   if (!show) return null;
   return (
     <div
