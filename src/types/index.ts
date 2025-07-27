@@ -80,9 +80,29 @@ export interface FoodItem {
 export interface Recipe {
   id: string;
   name: string;
+  /** Description optionnelle de la recette */
+  description?: string;
+  /** Liste des ingrédients */
   ingredients: string[];
-  instructions: string;
+  /** Étapes de préparation */
+  instructions: string[];
+  /** URL de la photo */
+  image?: string;
+  /** Catégories sélectionnées (Petit-déj, Déjeuner…) */
+  categories?: string[];
+  /** Temps de préparation, ex "25 min" */
   prepTime?: string;
+  /** Temps de cuisson, ex "30 min" */
+  cookTime?: string;
+  /** Nombre de portions */
+  servings?: number;
+  /** Valeurs nutritionnelles pour une portion */
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
   fridgeLife?: string;
   freezerLife?: string;
 }

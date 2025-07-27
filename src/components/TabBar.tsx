@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, BookOpen, BarChart3, UserCircle } from 'lucide-react';
+import { Home, Search, ChefHat, BarChart3, UserCircle } from 'lucide-react';
 
 interface TabBarProps {
   currentView: string;
@@ -10,16 +10,17 @@ const TabBar: React.FC<TabBarProps> = ({ currentView, onViewChange }) => {
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'search', label: 'Recherche', icon: Search },
-    { id: 'recipes', label: 'Recette', icon: BookOpen },
+    { id: 'recipes', label: 'Recettes', icon: ChefHat },
     { id: 'history', label: 'Historique', icon: BarChart3 },
     { id: 'profile', label: 'Profil', icon: UserCircle }
   ];
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-gray-700 bg-[#222B3A] text-white min-h-[96px]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 20px)' }}
     >
-      <nav className="flex justify-around py-2">
+      <nav className="flex justify-around pt-6 pb-8">
         {navItems.map(item => {
           const Icon = item.icon;
           const active = currentView === item.id;

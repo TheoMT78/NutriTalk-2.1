@@ -1,6 +1,7 @@
-import { searchProductFallback } from './openFoodFacts';
+import { searchProductFallback, searchProductExact } from './openFoodFacts';
 import { safeJson } from './safeJson';
 import { API_BASE } from './api';
+import { normalizeFoodName } from './normalizeFoodName';
 
 async function scrapeNutritionFromUrl(url: string, name: string): Promise<NutritionInfo | null> {
   const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
@@ -60,44 +61,6 @@ async function searchPreferredSites(query: string): Promise<NutritionInfo | null
   return null;
 }
 
-async function geminiNutrition(query: string): Promise<NutritionInfo | null> {
-  const base = API_BASE;
-  try {
-    const res = await fetch(`${base}/gemini-nutrition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: query })
-    });
-    if (!res.ok) return null;
-    const data = await safeJson<{ result: string }>(res);
-    const text = data?.result || '';
-    if (!text) return null;
-    const nut = extractNutrition(text);
-    if (nut.calories || nut.protein || nut.carbs || nut.fat) {
-      return { name: query, ...nut };
-    }
-  } catch (e) {
-    console.error('geminiNutrition error', e);
-  }
-  return null;
-}
-
-export async function geminiAnalyzeText(query: string): Promise<string | null> {
-  const base = API_BASE;
-  try {
-    const res = await fetch(`${base}/gemini-nutrition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: query })
-    });
-    if (!res.ok) return null;
-    const data = await safeJson<{ result: string }>(res);
-    return data?.result || null;
-  } catch (e) {
-    console.error('geminiAnalyzeText error', e);
-    return null;
-  }
-}
 
 export interface NutritionInfo {
   name: string;
@@ -109,16 +72,29 @@ export interface NutritionInfo {
 }
 
 export async function searchNutrition(query: string): Promise<NutritionInfo | null> {
-  const off = await searchProductFallback(query);
-  if (off[0]) {
-    const p = off[0];
+  const exact = await searchProductExact(query);
+  const normalized = normalizeFoodName(query);
+  if (exact && normalizeFoodName(exact.product_name || '') === normalized) {
     return {
-      name: p.product_name || query,
-      calories: p.nutriments?.['energy-kcal_100g'],
-      protein: p.nutriments?.proteins_100g,
-      carbs: p.nutriments?.carbohydrates_100g,
-      fat: p.nutriments?.fat_100g,
-      unit: p.serving_size?.includes('ml') ? '100ml' : '100g'
+      name: exact.product_name || query,
+      calories: exact.nutriments?.['energy-kcal_100g'],
+      protein: exact.nutriments?.proteins_100g,
+      carbs: exact.nutriments?.carbohydrates_100g,
+      fat: exact.nutriments?.fat_100g,
+      unit: exact.serving_size?.includes('ml') ? '100ml' : '100g'
+    };
+  }
+
+  const off = await searchProductFallback(query);
+  const match = off.find(p => normalizeFoodName(p.product_name || '').includes(normalized));
+  if (match) {
+    return {
+      name: match.product_name || query,
+      calories: match.nutriments?.['energy-kcal_100g'],
+      protein: match.nutriments?.proteins_100g,
+      carbs: match.nutriments?.carbohydrates_100g,
+      fat: match.nutriments?.fat_100g,
+      unit: match.serving_size?.includes('ml') ? '100ml' : '100g'
     };
   }
 
@@ -216,11 +192,6 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
     }
   }
 
-  const gemini = await geminiNutrition(query);
-  if (gemini) return gemini;
-
   return null;
 }
-
-export { geminiNutrition };
 
