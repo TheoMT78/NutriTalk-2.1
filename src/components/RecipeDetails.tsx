@@ -138,7 +138,7 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit, onDelete }) =
         {(totalTime || servings || calories) && (
           <div className="flex gap-4 text-gray-300 text-sm">
             {totalTime > 0 && <span>⏱️ {totalTime} min</span>}
-            <span>👤 {servings} pers.</span>
+            <span>👤 {servings} portion{servings>1?'s':''}</span>
             {calories !== undefined && <span>{calories} kcal</span>}
           </div>
         )}
@@ -172,14 +172,14 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit, onDelete }) =
                 <button onClick={() => setServings(s => Math.max(1, s - 1))} className="p-2 bg-gray-700 rounded" aria-label="Diminuer">
                   <Minus size={16} />
                 </button>
-                <span className="text-white">{servings} pers.</span>
+                <span className="text-white">{servings} portion{servings>1?'s':''}</span>
                 <button onClick={() => setServings(s => s + 1)} className="p-2 bg-gray-700 rounded" aria-label="Augmenter">
                   <Plus size={16} />
                 </button>
               </div>
               <div className="relative">
                 <button onClick={() => setShowUnitMenu(m => !m)} className="text-blue-400 flex items-center gap-1">
-                  Convertir les unités <ChevronDown size={16} />
+                  {unitMode==='metric'? 'Métrique' : unitMode==='imperial'? 'Impérial' : 'Convertir les unités'} <ChevronDown size={16} />
                 </button>
                 {showUnitMenu && (
                   <div className="absolute right-0 mt-1 bg-[#222B3A] rounded shadow z-10">

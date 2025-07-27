@@ -502,7 +502,7 @@ const RecipeForm: React.FC<Props> = ({ onSave, onClose, initialRecipe }) => {
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-white">Portions</span>
-                  <span className="text-gray-300">{servings} pers.</span>
+                  <span className="text-gray-300">{servings} portion{servings>1?'s':''}</span>
                 </div>
                 <button
                   type="button"

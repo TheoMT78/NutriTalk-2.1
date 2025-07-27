@@ -48,12 +48,6 @@ const DeleteRecipeSheet: React.FC<Props> = ({ show, onClose, onDelete }) => {
             >
               Supprimer la recette
             </button>
-            <button
-              onClick={onClose}
-              className="w-full py-2 bg-gray-700 text-white rounded-lg"
-            >
-              Annuler
-            </button>
           </>
         )}
       </div>

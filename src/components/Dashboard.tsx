@@ -1,4 +1,10 @@
 import React from 'react';
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { Trash2, Edit3, Coffee, Utensils, Moon as Dinner, Apple } from 'lucide-react';
 import { User, DailyLog, FoodEntry } from '../types';
 import MacroDetailsModal from './MacroDetailsModal';
@@ -170,12 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="p-6 border-b border-gray-700">
           <h3 className="text-lg font-semibold">Journal alimentaire</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {new Date(dailyLog.date).toLocaleDateString('fr-FR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            {dayjs(dailyLog.date).tz('Europe/Paris').locale('fr').format('dddd D MMMM YYYY')}
           </p>
         </div>
         

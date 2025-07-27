@@ -63,7 +63,7 @@ const RecipeCard: React.FC<Props> = ({ recipe, onAdd, onSelect, onDelete }) => {
       {(totalTime || recipe.servings) && (
         <div className="flex items-center text-gray-300 text-xs gap-4 my-1">
           {totalTime > 0 && <span>⏱️ {totalTime} min</span>}
-          <span>👤 {recipe.servings ?? 1} pers.</span>
+          <span>👤 {recipe.servings ?? 1} portion{(recipe.servings ?? 1) > 1 ? 's' : ''}</span>
         </div>
       )}
       {(recipe.calories || recipe.carbs || recipe.protein || recipe.fat) && (
