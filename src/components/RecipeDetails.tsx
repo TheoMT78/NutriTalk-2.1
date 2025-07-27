@@ -26,7 +26,11 @@ const getEmoji = (name: string) => {
   return key ? ingredientEmojis[key] : '🥄';
 };
 
-const parseIng = (ing: string, factor: number) => {
+const parseIng = (
+  ing: string,
+  factor: number,
+  unitMode: 'original' | 'metric' | 'imperial' = 'original'
+) => {
   const m = ing.match(/^(\d+(?:\.\d+)?)(\s*(kg|g|ml|cl|l|oz|lb|fl\s?oz|cup)s?\b)?\s*(.*)/i);
   if (m) {
     let qty = parseFloat(m[1]) * factor;
@@ -186,7 +190,7 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
               {ingredientsList.map((ing, i) => (
                 <li key={i} className="flex gap-2 items-start">
                   <span>{getEmoji(ing)}</span>
-                  <span className="break-words whitespace-pre-line flex-1">{parseIng(ing, factor)}</span>
+                  <span className="break-words whitespace-pre-line flex-1">{parseIng(ing, factor, unitMode)}</span>
                 </li>
               ))}
             </ul>
