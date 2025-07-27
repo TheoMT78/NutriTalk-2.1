@@ -61,44 +61,6 @@ async function searchPreferredSites(query: string): Promise<NutritionInfo | null
   return null;
 }
 
-async function geminiNutrition(query: string): Promise<NutritionInfo | null> {
-  const base = API_BASE;
-  try {
-    const res = await fetch(`${base}/gemini-nutrition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: query })
-    });
-    if (!res.ok) return null;
-    const data = await safeJson<{ result: string }>(res);
-    const text = data?.result || '';
-    if (!text) return null;
-    const nut = extractNutrition(text);
-    if (nut.calories || nut.protein || nut.carbs || nut.fat) {
-      return { name: query, ...nut };
-    }
-  } catch (e) {
-    console.error('geminiNutrition error', e);
-  }
-  return null;
-}
-
-export async function geminiAnalyzeText(query: string): Promise<string | null> {
-  const base = API_BASE;
-  try {
-    const res = await fetch(`${base}/gemini-nutrition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: query })
-    });
-    if (!res.ok) return null;
-    const data = await safeJson<{ result: string }>(res);
-    return data?.result || null;
-  } catch (e) {
-    console.error('geminiAnalyzeText error', e);
-    return null;
-  }
-}
 
 export interface NutritionInfo {
   name: string;
@@ -230,11 +192,6 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
     }
   }
 
-  const gemini = await geminiNutrition(query);
-  if (gemini) return gemini;
-
   return null;
 }
-
-export { geminiNutrition };
 

@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
-import { searchNutrition, geminiAnalyzeText } from '../utils/nutritionSearch';
+import { searchNutrition } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
 import { findFoodSmart } from '../utils/findFoodSmart';
-import { shouldUseGemini } from "../utils/shouldUseGemini";
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
@@ -43,7 +42,6 @@ interface Message {
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
-  fromGemini?: boolean;
   suggestions?: FoodSuggestion[];
   recipe?: Recipe;
 }
@@ -268,26 +266,6 @@ const AIChat: React.FC<AIChatProps> = ({
         return;
       }
 
-      if (shouldUseGemini(input, fullFoodBase)) {
-        const gem = await geminiAnalyzeText(input);
-        const text = gem ||
-          'Aucun resultat trouve, merci d\u2019ajouter les valeurs a la main.';
-        clearTimeout(timeout);
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            type: 'ai',
-            content: text,
-            timestamp: new Date(),
-            fromGemini: true
-          }
-        ]);
-        setIsLoading(false);
-        setInput('');
-        voiceResultRef.current = '';
-        return;
-      }
 
       // Simulated AI processing
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -301,14 +279,11 @@ const AIChat: React.FC<AIChatProps> = ({
       if (timedOut) return;
 
       if (suggestions.length < 2 && (questions.length > 0 || notFound.length > 0 || suggestions.length === 0)) {
-        const gem = await geminiAnalyzeText(input);
-        const text = gem || 'Aucun aliment trouvé. Essayez de décrire autrement ou vérifiez l\u2019orthographe.';
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: text,
-          timestamp: new Date(),
-          fromGemini: true
+          content: "Aucun aliment trouvé. Merci de l'ajouter manuellement.",
+          timestamp: new Date()
         };
         setMessages(prev => [...prev, aiMessage]);
         setInput('');
@@ -540,9 +515,6 @@ const AIChat: React.FC<AIChatProps> = ({
                   <span className="text-xs opacity-70">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
-                  {message.fromGemini && (
-                    <span className="ml-2 px-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white text-[10px]">Gemini</span>
-                  )}
                 </div>
                 <div className="whitespace-pre-line">{message.content}</div>
                 
@@ -617,16 +589,6 @@ const AIChat: React.FC<AIChatProps> = ({
                         Ajouter à mes recettes
                       </button>
                     )}
-                  </div>
-                )}
-                {message.fromGemini && (
-                  <div className="mt-2">
-                    <button
-                      onClick={() => alert('Fonctionnalité à venir')}
-                      className="text-xs text-blue-400 underline"
-                    >
-                      Ajouter à ma base
-                    </button>
                   </div>
                 )}
               </div>
