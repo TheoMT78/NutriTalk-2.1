@@ -1,6 +1,7 @@
-import { searchProductFallback } from './openFoodFacts';
+import { searchProductFallback, searchProductExact } from './openFoodFacts';
 import { safeJson } from './safeJson';
 import { API_BASE } from './api';
+import { normalizeFoodName } from './normalizeFoodName';
 
 async function scrapeNutritionFromUrl(url: string, name: string): Promise<NutritionInfo | null> {
   const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
@@ -109,16 +110,29 @@ export interface NutritionInfo {
 }
 
 export async function searchNutrition(query: string): Promise<NutritionInfo | null> {
-  const off = await searchProductFallback(query);
-  if (off[0]) {
-    const p = off[0];
+  const exact = await searchProductExact(query);
+  const normalized = normalizeFoodName(query);
+  if (exact && normalizeFoodName(exact.product_name || '') === normalized) {
     return {
-      name: p.product_name || query,
-      calories: p.nutriments?.['energy-kcal_100g'],
-      protein: p.nutriments?.proteins_100g,
-      carbs: p.nutriments?.carbohydrates_100g,
-      fat: p.nutriments?.fat_100g,
-      unit: p.serving_size?.includes('ml') ? '100ml' : '100g'
+      name: exact.product_name || query,
+      calories: exact.nutriments?.['energy-kcal_100g'],
+      protein: exact.nutriments?.proteins_100g,
+      carbs: exact.nutriments?.carbohydrates_100g,
+      fat: exact.nutriments?.fat_100g,
+      unit: exact.serving_size?.includes('ml') ? '100ml' : '100g'
+    };
+  }
+
+  const off = await searchProductFallback(query);
+  const match = off.find(p => normalizeFoodName(p.product_name || '').includes(normalized));
+  if (match) {
+    return {
+      name: match.product_name || query,
+      calories: match.nutriments?.['energy-kcal_100g'],
+      protein: match.nutriments?.proteins_100g,
+      carbs: match.nutriments?.carbohydrates_100g,
+      fat: match.nutriments?.fat_100g,
+      unit: match.serving_size?.includes('ml') ? '100ml' : '100g'
     };
   }
 

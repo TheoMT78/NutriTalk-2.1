@@ -18,6 +18,7 @@ export interface OFFProduct {
 
 import aliments from '../data/aliments.json';
 import { safeJson } from './safeJson';
+import { normalizeFoodName } from './normalizeFoodName';
 
 export function loadLocalFoodBase(): OFFProduct[] {
   return aliments as OFFProduct[];
@@ -54,6 +55,18 @@ export async function searchProduct(query: string): Promise<OFFProduct[]> {
     console.error('searchProduct error', e);
     return [];
   }
+}
+
+export async function searchProductExact(query: string): Promise<OFFProduct | null> {
+  const results = await searchProduct(query);
+  const target = normalizeFoodName(query);
+  for (const p of results) {
+    const name = p.product_name || '';
+    if (normalizeFoodName(name) === target) {
+      return p;
+    }
+  }
+  return null;
 }
 
 export async function searchProductFallback(query: string): Promise<OFFProduct[]> {
