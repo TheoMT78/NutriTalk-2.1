@@ -63,6 +63,7 @@ const parseTime = (val: string): [number, number] => {
   return [parseInt(hMatch?.[1] || '0', 10), parseInt(mMatch?.[1] || val, 10) || 0];
 };
 import { Recipe } from '../types';
+import { computeRecipeMacros } from '../utils/computeRecipeMacros';
 
 const ingredientEmojis: Record<string, string> = {
   banane: '🍌',
@@ -116,7 +117,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [ingredientInput, setIngredientInput] = useState('');
   const [steps, setSteps] = useState<string[]>([]);
   const [stepInput, setStepInput] = useState('');
-  const [servings, setServings] = useState('');
+  const [servings, setServings] = useState('1');
   const [prepTime, setPrepTime] = useState('');
   const [cookTime, setCookTime] = useState('');
   const [showPortion, setShowPortion] = useState(false);
@@ -130,6 +131,24 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
   const [dictationText, setDictationText] = useState('');
   const ingRecRef = useRef<SpeechRecognition | null>(null);
   const stepRecRef = useRef<SpeechRecognition | null>(null);
+
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        finishDictation(true);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        finishDictation(false);
+      }
+    };
+    if (recordingTarget) {
+      document.addEventListener('keydown', handler);
+    }
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
+  }, [recordingTarget, dictationText]);
 
   const toggleCategory = (c: string) => {
     setCategories(prev =>
@@ -256,6 +275,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     e.preventDefault();
     addIngredientsFromInput();
     addStepsFromInput();
+    const macros = computeRecipeMacros(ingredients);
     const recipe: Recipe = {
       id: Date.now().toString(),
       name,
@@ -264,9 +284,13 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
       categories,
       ingredients: ingredients.filter(Boolean),
       instructions: steps.filter(Boolean),
-      servings: servings ? parseInt(servings, 10) : undefined,
+      servings: parseInt(servings, 10) || 1,
       prepTime: prepTime || '0',
-      cookTime: cookTime || '0'
+      cookTime: cookTime || '0',
+      calories: macros.calories,
+      protein: macros.protein,
+      carbs: macros.carbs,
+      fat: macros.fat
     };
     onAdd(recipe);
     onClose();
@@ -476,7 +500,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-white">Portions</span>
-                  {servings && <span className="text-gray-300">{servings}</span>}
+                  <span className="text-gray-300">{servings} pers.</span>
                 </div>
                 <button
                   type="button"
@@ -544,7 +568,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                 Sélectionnez le nombre de portions que cette recette permet de réaliser
               </p>
               <select
-                value={servings || ''}
+                value={servings}
                 onChange={e => setServings(e.target.value)}
                 className="w-full rounded-lg bg-[#232832] text-white px-3 py-2 mb-4"
               >
