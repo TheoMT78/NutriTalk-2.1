@@ -55,6 +55,12 @@ const Recipes: React.FC = () => {
   const [selected, setSelected] = useState<Recipe | null>(null);
   const [editing, setEditing] = useState<Recipe | null>(null);
   const [reopenId, setReopenId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
 
   const toggleCat = (c: string) => {
     if (c === 'Toutes') {
@@ -88,6 +94,12 @@ const Recipes: React.FC = () => {
       setSelected(r);
       setReopenId(null);
     }
+  };
+
+  const deleteRecipe = (r: Recipe) => {
+    setRecipes(prev => prev.filter(x => x.id !== r.id));
+    if (selected?.id === r.id) setSelected(null);
+    showToast('Recette supprimée');
   };
 
   return (
@@ -136,7 +148,7 @@ const Recipes: React.FC = () => {
       </div>
       <div className="space-y-4">
         {filtered.map(r => (
-          <RecipeCard key={r.id} recipe={r} onSelect={() => setSelected(r)} />
+          <RecipeCard key={r.id} recipe={r} onSelect={() => setSelected(r)} onDelete={deleteRecipe} />
         ))}
       </div>
       {showForm && (
@@ -158,7 +170,13 @@ const Recipes: React.FC = () => {
             setReopenId(r.id);
             setSelected(null);
           }}
+          onDelete={deleteRecipe}
         />
+      )}
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg z-50">
+          {toast}
+        </div>
       )}
     </div>
   );

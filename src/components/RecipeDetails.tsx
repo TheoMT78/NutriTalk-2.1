@@ -1,6 +1,7 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
-import { X, Pencil, Minus, Plus, ChevronDown } from 'lucide-react';
+import { X, Pencil, Minus, Plus, ChevronDown, MoreVertical } from 'lucide-react';
 import { Recipe } from '../types';
+import DeleteRecipeSheet from './DeleteRecipeSheet';
 
 const ingredientEmojis: Record<string, string> = {
   banane: '🍌',
@@ -77,13 +78,15 @@ interface Props {
   recipe: Recipe;
   onClose: () => void;
   onEdit: (r: Recipe) => void;
+  onDelete?: (r: Recipe) => void;
 }
 
-const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
+const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit, onDelete }) => {
   const [tab, setTab] = useState<'ingredients' | 'steps' | 'score'>('ingredients');
   const [servings, setServings] = useState(recipe.servings || 1);
   const [unitMode, setUnitMode] = useState<'original' | 'metric' | 'imperial'>('original');
   const [showUnitMenu, setShowUnitMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const factor = servings / (recipe.servings || 1);
@@ -114,9 +117,16 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
             <X />
           </button>
           <h2 className="text-xl font-bold flex-1 text-center">{recipe.name}</h2>
-          <button onClick={() => onEdit(recipe)} aria-label="Modifier" className="text-gray-400 p-2">
-            <Pencil />
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => onEdit(recipe)} aria-label="Modifier" className="text-gray-400 p-2">
+              <Pencil />
+            </button>
+            {onDelete && (
+              <button onClick={() => setShowMenu(true)} aria-label="Options" className="text-gray-400 p-2">
+                <MoreVertical />
+              </button>
+            )}
+          </div>
         </div>
         {recipe.image ? (
           <img src={recipe.image} alt={recipe.name} className="w-full h-40 object-cover rounded-lg" />
@@ -259,6 +269,13 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
           </div>
         )}
       </div>
+      {onDelete && (
+        <DeleteRecipeSheet
+          show={showMenu}
+          onClose={() => setShowMenu(false)}
+          onDelete={() => onDelete(recipe)}
+        />
+      )}
     </div>
   );
 };
