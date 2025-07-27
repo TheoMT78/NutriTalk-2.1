@@ -368,7 +368,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                       contentEditable
                       suppressContentEditableWarning
                       onBlur={e => updateIngredient(i, e.currentTarget.textContent || '')}
-                      className="flex-1 text-white outline-none break-words whitespace-pre-line"
+                      className="flex-1 text-white outline-none break-words whitespace-pre-line overflow-hidden"
                     >
                       {parseIngredient(ing)}
                     </div>
@@ -430,7 +430,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                       contentEditable
                       suppressContentEditableWarning
                       onBlur={e => updateStep(i, e.currentTarget.textContent || '')}
-                      className="flex-1 bg-transparent text-white outline-none break-words whitespace-pre-line"
+                      className="flex-1 bg-transparent text-white outline-none break-words whitespace-pre-line overflow-hidden"
                     >
                       {step}
                     </div>
