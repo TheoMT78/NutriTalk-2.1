@@ -162,6 +162,10 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
+  const removeStep = (index: number) => {
+    setSteps(steps.filter((_, i) => i !== index));
+  };
+
   const startDictation = (target: 'ing' | 'step') => {
     const SpeechRecognitionClass =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -368,6 +372,14 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                     >
                       {parseIngredient(ing)}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => removeIngredient(i)}
+                      className="text-gray-400 hover:text-red-500 ml-2"
+                      aria-label="Supprimer"
+                    >
+                      <Trash size={16} />
+                    </button>
                   </div>
                 </SwipeableListItem>
               ))}
@@ -409,7 +421,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                         <Trash />
                       </div>
                     ),
-                    action: () => setSteps(steps.filter((_, idx) => idx !== i))
+                    action: () => removeStep(i)
                   }}
                 >
                   <div className="flex items-center gap-2 bg-[#232832] rounded-lg px-3 py-2 mb-2">
@@ -422,6 +434,14 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
                       className="flex-1 bg-transparent text-white outline-none"
                       placeholder={`Étape ${i + 1}`}
                     />
+                    <button
+                      type="button"
+                      onClick={() => removeStep(i)}
+                      className="text-gray-400 hover:text-red-500 ml-2"
+                      aria-label="Supprimer"
+                    >
+                      <Trash size={16} />
+                    </button>
                   </div>
                 </SwipeableListItem>
               ))}
@@ -613,7 +633,14 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
               <Mic className="text-white" />
             </div>
             {dictationText && (
-              <p className="text-white max-w-xs text-center px-4 whitespace-pre-line break-words">{dictationText}</p>
+              <ul className="text-white max-w-xs text-left space-y-1 px-4">
+                {(recordingTarget === 'ing'
+                  ? parseIngredientsInput(dictationText)
+                  : parseInstructionsInput(dictationText)
+                ).map((t, idx) => (
+                  <li key={idx}>{recordingTarget === 'step' ? `${idx + 1}. ${t}` : t}</li>
+                ))}
+              </ul>
             )}
             <div className="flex gap-6">
               <button
