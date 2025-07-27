@@ -4,6 +4,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Recipe } from '../types';
 import RecipeCard from './RecipeCard';
 import RecipeForm from './RecipeForm';
+import RecipeDetails from './RecipeDetails';
 
 const defaultRecipes: Recipe[] = [
   {
@@ -35,6 +36,8 @@ const Recipes: React.FC = () => {
   const [search, setSearch] = useState('');
   const [cats, setCats] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [selected, setSelected] = useState<Recipe | null>(null);
+  const [editing, setEditing] = useState<Recipe | null>(null);
 
   const toggleCat = (c: string) => {
     if (c === 'Toutes') {
@@ -52,6 +55,18 @@ const Recipes: React.FC = () => {
 
   const addRecipe = (r: Recipe) => {
     setRecipes([...recipes, r]);
+  };
+
+  const saveRecipe = (r: Recipe) => {
+    setRecipes(prev => {
+      const idx = prev.findIndex(x => x.id === r.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = r;
+        return copy;
+      }
+      return [...prev, r];
+    });
   };
 
   return (
@@ -100,10 +115,29 @@ const Recipes: React.FC = () => {
       </div>
       <div className="space-y-4">
         {filtered.map(r => (
-          <RecipeCard key={r.id} recipe={r} onSelect={() => {}} />
+          <RecipeCard key={r.id} recipe={r} onSelect={() => setSelected(r)} />
         ))}
       </div>
-      {showForm && <RecipeForm onAdd={addRecipe} onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <RecipeForm onSave={addRecipe} onClose={() => setShowForm(false)} />
+      )}
+      {editing && (
+        <RecipeForm
+          onSave={saveRecipe}
+          initialRecipe={editing}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {selected && (
+        <RecipeDetails
+          recipe={selected}
+          onClose={() => setSelected(null)}
+          onEdit={(r) => {
+            setEditing(r);
+            setSelected(null);
+          }}
+        />
+      )}
     </div>
   );
 };

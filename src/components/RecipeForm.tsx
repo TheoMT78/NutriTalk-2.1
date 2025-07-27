@@ -102,24 +102,25 @@ const parseIngredient = (ing: string) => {
 };
 
 interface Props {
-  onAdd: (r: Recipe) => void;
+  onSave: (r: Recipe) => void;
   onClose: () => void;
+  initialRecipe?: Recipe;
 }
 
 const mealCategories = ['Petit-déj', 'Déjeuner', 'Dîner', 'Collation'];
 
-const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [image, setImage] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [ingredients, setIngredients] = useState<string[]>([]);
+const RecipeForm: React.FC<Props> = ({ onSave, onClose, initialRecipe }) => {
+  const [name, setName] = useState(initialRecipe?.name || '');
+  const [description, setDescription] = useState(initialRecipe?.description || '');
+  const [image, setImage] = useState(initialRecipe?.image || '');
+  const [categories, setCategories] = useState<string[]>(initialRecipe?.categories || []);
+  const [ingredients, setIngredients] = useState<string[]>(initialRecipe?.ingredients || []);
   const [ingredientInput, setIngredientInput] = useState('');
-  const [steps, setSteps] = useState<string[]>([]);
+  const [steps, setSteps] = useState<string[]>(initialRecipe?.instructions || []);
   const [stepInput, setStepInput] = useState('');
-  const [servings, setServings] = useState('1');
-  const [prepTime, setPrepTime] = useState('');
-  const [cookTime, setCookTime] = useState('');
+  const [servings, setServings] = useState(String(initialRecipe?.servings || 1));
+  const [prepTime, setPrepTime] = useState(initialRecipe?.prepTime || '');
+  const [cookTime, setCookTime] = useState(initialRecipe?.cookTime || '');
   const [showPortion, setShowPortion] = useState(false);
   const [showPrep, setShowPrep] = useState(false);
   const [showCook, setShowCook] = useState(false);
@@ -277,7 +278,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
     addStepsFromInput();
     const macros = computeRecipeMacros(ingredients);
     const recipe: Recipe = {
-      id: Date.now().toString(),
+      id: initialRecipe?.id || Date.now().toString(),
       name,
       description: description || undefined,
       image: image || undefined,
@@ -292,7 +293,7 @@ const RecipeForm: React.FC<Props> = ({ onAdd, onClose }) => {
       carbs: macros.carbs,
       fat: macros.fat
     };
-    onAdd(recipe);
+    onSave(recipe);
     onClose();
   };
 
