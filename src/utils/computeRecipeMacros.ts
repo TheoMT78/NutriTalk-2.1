@@ -6,10 +6,12 @@ export interface RecipeMacros {
   protein: number;
   carbs: number;
   fat: number;
+  fiber?: number;
+  sugars?: number;
 }
 
 export function computeRecipeMacros(ingredients: string[]): RecipeMacros {
-  let totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  let totals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugars: 0 };
 
   for (const ing of ingredients) {
     const match = ing.match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l)?\s*(.+)/i);
@@ -37,6 +39,8 @@ export function computeRecipeMacros(ingredients: string[]): RecipeMacros {
     calories: Math.round(totals.calories),
     protein: Math.round(totals.protein),
     carbs: Math.round(totals.carbs),
-    fat: Math.round(totals.fat)
+    fat: Math.round(totals.fat),
+    fiber: totals.fiber ? Math.round(totals.fiber) : undefined,
+    sugars: totals.sugars ? Math.round(totals.sugars) : undefined
   };
 }

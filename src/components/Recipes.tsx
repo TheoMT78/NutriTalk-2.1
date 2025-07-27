@@ -38,6 +38,7 @@ const Recipes: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<Recipe | null>(null);
   const [editing, setEditing] = useState<Recipe | null>(null);
+  const [reopenId, setReopenId] = useState<string | null>(null);
 
   const toggleCat = (c: string) => {
     if (c === 'Toutes') {
@@ -67,6 +68,10 @@ const Recipes: React.FC = () => {
       }
       return [...prev, r];
     });
+    if (reopenId === r.id) {
+      setSelected(r);
+      setReopenId(null);
+    }
   };
 
   return (
@@ -134,6 +139,7 @@ const Recipes: React.FC = () => {
           onClose={() => setSelected(null)}
           onEdit={(r) => {
             setEditing(r);
+            setReopenId(r.id);
             setSelected(null);
           }}
         />

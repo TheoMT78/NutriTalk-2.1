@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { X, Pencil, Minus, Plus } from 'lucide-react';
 import { Recipe } from '../types';
 
@@ -50,6 +50,8 @@ interface Props {
 const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
   const [tab, setTab] = useState<'ingredients' | 'steps' | 'score'>('ingredients');
   const [servings, setServings] = useState(recipe.servings || 1);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const lastScroll = useRef(0);
   const factor = servings / (recipe.servings || 1);
   const parseTime = (val?: string) => {
     if (!val) return 0;
@@ -59,8 +61,17 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
   };
   const totalTime = parseTime(recipe.prepTime) + parseTime(recipe.cookTime);
   const calories = recipe.calories ? Math.round(recipe.calories * factor) : undefined;
+
+  const changeTab = (t: 'ingredients' | 'steps' | 'score') => {
+    if (scrollRef.current) lastScroll.current = scrollRef.current.scrollTop;
+    setTab(t);
+  };
+
+  useLayoutEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = lastScroll.current;
+  }, [tab]);
   return (
-    <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50">
+    <div className="fixed inset-0 bg-black/80 overflow-y-auto z-50" ref={scrollRef}>
       <div className="bg-[#181D24] min-h-screen p-4 pb-10 space-y-4">
         <div className="flex justify-between items-center">
           <button onClick={onClose} aria-label="Fermer" className="text-gray-400 p-2">
@@ -86,13 +97,39 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
           </div>
         )}
         <div className="flex gap-4 border-b border-gray-700">
-          <button className={`pb-2 flex-1 ${tab==='ingredients'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`} onClick={() => setTab('ingredients')}>Ingrédients</button>
-          <button className={`pb-2 flex-1 ${tab==='steps'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`} onClick={() => setTab('steps')}>Instructions</button>
-          <button className={`pb-2 flex-1 ${tab==='score'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`} onClick={() => setTab('score')}>Score santé</button>
+          <button
+            className={`pb-2 flex-1 ${tab==='ingredients'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`}
+            onClick={() => changeTab('ingredients')}
+          >
+            Ingrédients
+          </button>
+          <button
+            className={`pb-2 flex-1 ${tab==='steps'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`}
+            onClick={() => changeTab('steps')}
+          >
+            Instructions
+          </button>
+          <button
+            className={`pb-2 flex-1 ${tab==='score'? 'border-b-2 border-blue-500 text-white':'text-gray-400'}`}
+            onClick={() => changeTab('score')}
+          >
+            Score santé
+          </button>
         </div>
         {tab === 'ingredients' && (
           <div className="space-y-2">
-            {recipe.description && <p className="text-gray-300 text-sm">{recipe.description}</p>}
+            {recipe.description && (
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-gray-300 text-sm flex-1 break-words">{recipe.description}</p>
+                <button
+                  onClick={() => onEdit(recipe)}
+                  aria-label="Modifier"
+                  className="text-gray-400 p-1 flex-shrink-0"
+                >
+                  <Pencil size={16} />
+                </button>
+              </div>
+            )}
             <ul className="space-y-1">
               {recipe.ingredients.map((ing, i) => (
                 <li key={i} className="flex gap-2 items-start">
@@ -101,6 +138,7 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
                 </li>
               ))}
             </ul>
+            <div className="text-center text-sm text-gray-400 py-2 border-t border-gray-700">Ajouter à la liste de courses</div>
             <div className="flex items-center justify-center gap-4 pt-4">
               <button onClick={() => setServings(s => Math.max(1, s - 1))} className="p-2 bg-gray-700 rounded" aria-label="Diminuer"> <Minus size={16}/> </button>
               <span className="text-white">{servings} pers.</span>
@@ -125,12 +163,46 @@ const RecipeDetails: React.FC<Props> = ({ recipe, onClose, onEdit }) => {
         )}
         {tab === 'score' && (
           <div className="space-y-2 text-sm text-gray-300">
-            <div className="flex gap-2">
-              {recipe.calories !== undefined && <span className="bg-blue-700 text-white rounded px-2 py-1 text-xs font-bold">{Math.round((recipe.calories || 0)/ (recipe.servings||1))} kcal</span>}
-              {recipe.carbs !== undefined && <span className="bg-orange-400 text-white rounded px-2 py-1 text-xs font-bold">{Math.round((recipe.carbs ||0)/(recipe.servings||1))}g gluc</span>}
-              {recipe.protein !== undefined && <span className="bg-green-500 text-white rounded px-2 py-1 text-xs font-bold">{Math.round((recipe.protein||0)/(recipe.servings||1))}g prot</span>}
-              {recipe.fat !== undefined && <span className="bg-violet-600 text-white rounded px-2 py-1 text-xs font-bold">{Math.round((recipe.fat||0)/(recipe.servings||1))}g lip</span>}
-            </div>
+            <table className="w-full text-left">
+              <tbody>
+                {recipe.calories !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Calories</th>
+                    <td>{Math.round((recipe.calories || 0) / (recipe.servings || 1))} kcal</td>
+                  </tr>
+                )}
+                {recipe.carbs !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Glucides</th>
+                    <td>{Math.round((recipe.carbs || 0) / (recipe.servings || 1))} g</td>
+                  </tr>
+                )}
+                {recipe.protein !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Protéines</th>
+                    <td>{Math.round((recipe.protein || 0) / (recipe.servings || 1))} g</td>
+                  </tr>
+                )}
+                {recipe.fat !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Lipides</th>
+                    <td>{Math.round((recipe.fat || 0) / (recipe.servings || 1))} g</td>
+                  </tr>
+                )}
+                {recipe.fiber !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Fibres</th>
+                    <td>{Math.round((recipe.fiber || 0) / (recipe.servings || 1))} g</td>
+                  </tr>
+                )}
+                {recipe.sugars !== undefined && (
+                  <tr>
+                    <th className="pr-4 font-normal">Sucres</th>
+                    <td>{Math.round((recipe.sugars || 0) / (recipe.servings || 1))} g</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

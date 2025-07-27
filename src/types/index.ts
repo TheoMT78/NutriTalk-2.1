@@ -101,6 +101,8 @@ export interface Recipe {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
+  sugars?: number;
   fridgeLife?: string;
   freezerLife?: string;
 }
