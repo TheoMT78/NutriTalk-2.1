@@ -30,3 +30,28 @@ export function filterFoods(foods: FoodItem[], query: string): FoodItem[] {
     return words.concat(synos).some(word => word.startsWith(nq));
   });
 }
+
+/**
+ * Find the best matching food for a parsed term. It first checks for an exact
+ * match on the name or any synonym. If none is found, it falls back to the same
+ * prefix logic as {@link filterFoods} and returns the first match.
+ */
+export function getFoodFromParsedText(
+  foods: FoodItem[],
+  parsed: string
+): FoodItem | undefined {
+  const nq = normalizeString(parsed);
+
+  const exact = foods.find(
+    f =>
+      normalizeString(f.name) === nq ||
+      (f.synonyms && f.synonyms.some(s => normalizeString(s) === nq))
+  );
+  if (exact) return exact;
+
+  return foods.find(f => {
+    const mots = normalizeString(f.name).split(' ');
+    const synos = (f.synonyms || []).map(normalizeString);
+    return mots.concat(synos).some(mot => mot.startsWith(nq));
+  });
+}
