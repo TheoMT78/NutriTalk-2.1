@@ -11,7 +11,15 @@ export const synonyms = {
   'pomme de terre': ['pomme de terre', 'pommes de terre', 'patate', 'patates'],
   banane: ['banane', 'bananes'],
   fraise: ['fraise', 'fraises'],
-  'flocons d\'avoine': ['flocon d\'avoine', 'flocons d\'avoine', 'avoine']
+  'flocons d\'avoine': ['flocon d\'avoine', 'flocons d\'avoine', 'avoine'],
+  farine: [
+    'farine',
+    'farine de ble',
+    'farine de blé',
+    'farine d\'avoine',
+    'farine de patate douce',
+    'farines'
+  ]
 };
 
 // Return possible variants (synonyms) for a given name
@@ -197,6 +205,10 @@ export async function searchUsda(query) {
 
 // ------------------ CIQUAL ------------------
 let ciqualCache = null;
+/**
+ * Read and cache the Ciqual Excel file located in `data/`. The file is
+ * parsed only once and converted to a simplified array of objects.
+ */
 function loadCiqual() {
   if (ciqualCache) return ciqualCache;
   const filePath = path.join('data', 'Table Ciqual 2020_FR_2020 07 07.xls');
@@ -265,6 +277,11 @@ export function searchCiqualMany(query) {
 
 // ------------------ FINELI ------------------
 let fineliCache = null;
+/**
+ * Load and parse the zipped Fineli CSV dataset located in `data/`.
+ * The ZIP is decompressed on the fly and parsed only once, then
+ * cached in memory for subsequent calls.
+ */
 async function loadFineli() {
   if (fineliCache) return fineliCache;
   const filePath = path.join('data', 'Fineli_Rel20__74_ravintotekij__.zip');
@@ -357,6 +374,12 @@ export async function find_and_suggest_food(food_name) {
     const res = await searchOpenFoodFacts(v);
     if (isComplete(res)) return { ...res, source: 'openfoodfacts' };
   }
+  for (const v of variants) {
+    const usda = await searchUsda(v);
+    if (usda.length && isComplete(usda[0])) {
+      return { ...usda[0], source: 'usda' };
+    }
+  }
   const ciqualRes = searchCiqual(food_name);
   if (ciqualRes) return { ...ciqualRes, source: 'ciqual' };
   const fineliRes = await searchFineli(food_name);
@@ -365,19 +388,45 @@ export async function find_and_suggest_food(food_name) {
 }
 
 /**
- * Advanced search returning multiple suggestions following the order:
- * OpenFoodFacts -> USDA -> local Excel/CSV data.
+ * Search all data sources for foods matching the query. Results from
+ * OpenFoodFacts are returned first, then USDA, then the local Excel/CSV
+ * datasets. Synonyms and common variants are taken into account to
+ * provide suggestions even when the user types only a generic word.
+ *
+ * @param {string} query - Raw food name coming from the user
+ * @returns {Promise<Array>} List of suggestion objects with a `source` field
  */
 export async function advancedFoodSearch(query) {
-  let results = await suggestOpenFoodFacts(query);
-  if (results.length) return results.map(r => ({ ...r, source: 'openfoodfacts' }));
+  const variants = getVariants(query);
+  const seen = new Set();
+  const collect = (arr, source) => {
+    return arr.reduce((acc, r) => {
+      const key = normalizeName(r.food_name);
+      if (seen.has(key)) return acc;
+      seen.add(key);
+      acc.push({ ...r, source });
+      return acc;
+    }, []);
+  };
 
-  results = await searchUsda(query);
-  if (results.length) return results.map(r => ({ ...r, source: 'usda' }));
+  let all = [];
+  for (const v of variants) {
+    all.push(...collect(await suggestOpenFoodFacts(v), 'openfoodfacts'));
+  }
+  if (all.length) return all;
 
-  results = searchCiqualMany(query).map(r => ({ ...r, source: 'ciqual' }));
-  if (results.length) return results;
+  for (const v of variants) {
+    all.push(...collect(await searchUsda(v), 'usda'));
+  }
+  if (all.length) return all;
 
-  results = await searchFineliMany(query);
-  return results.map(r => ({ ...r, source: 'fineli' }));
+  for (const v of variants) {
+    all.push(...collect(searchCiqualMany(v), 'ciqual'));
+  }
+  if (all.length) return all;
+
+  for (const v of variants) {
+    all.push(...collect(await searchFineliMany(v), 'fineli'));
+  }
+  return all;
 }
