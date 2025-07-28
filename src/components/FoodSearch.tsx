@@ -6,9 +6,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import QRScanner from './QRScanner';
 import { OFFProduct, searchProductFallback } from '../utils/openFoodFacts';
 import FoodDetailModal from './FoodDetailModal';
-import Fuse from 'fuse.js';
 import { normalizeFoodName } from '../utils/normalizeFoodName';
-import { suggestSimilarFoods } from '../utils/suggestSimilarFoods';
 
 interface FoodSearchProps {
   onAddFood: (food: {
@@ -94,29 +92,21 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
     [allFoods]
   );
 
-  const fuse = useMemo(
-    () => new Fuse(normalizedFoods, { keys: ['_norm'], threshold: 0.3 }),
-    [normalizedFoods]
-  );
-
   const searchResults = useMemo(() => {
     if (!searchTerm) return normalizedFoods;
     const norm = normalizeFoodName(searchTerm);
-    const direct = normalizedFoods.filter(f => f._norm.includes(norm));
-    if (direct.length > 0) return direct;
-    const results = fuse.search(norm);
-    return results.map(r => r.item);
-  }, [searchTerm, fuse, normalizedFoods]);
+    const starts = normalizedFoods.filter(f => f._norm.startsWith(norm));
+    const contains = normalizedFoods.filter(
+      f => !starts.includes(f) && f._norm.includes(norm)
+    );
+    return [...starts, ...contains];
+  }, [searchTerm, normalizedFoods]);
 
   const filteredFoods = searchResults.filter((food) => {
     const matchesFavorites = showFavorites ? favorites.includes(food.id) : true;
     return matchesFavorites;
   });
 
-  const suggestions = useMemo(() => {
-    if (!searchTerm || filteredFoods.length > 0) return [] as FoodItem[];
-    return suggestSimilarFoods(searchTerm, normalizedFoods);
-  }, [searchTerm, filteredFoods.length, normalizedFoods]);
 
   useEffect(() => {
     const fetchExternal = async () => {
@@ -307,57 +297,6 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
               <p className="text-gray-500 dark:text-gray-400">
                 Aucun aliment trouvé pour votre recherche
               </p>
-              {suggestions.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-gray-400 mb-2">Suggestions :</p>
-                  <div className="space-y-3">
-                    {suggestions.map(food => {
-                      const fav = favorites.includes(food.id);
-                      return (
-                        <div
-                          key={food.id}
-                          className="flex items-center justify-between p-4 rounded-xl cursor-pointer bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                          onClick={() => setDetailFood(food)}
-                        >
-                          <div className="flex flex-col text-left">
-                            <span className="font-bold text-white text-base">{food.name}</span>
-                            <span className="text-gray-400 text-sm mt-0.5">
-                              {food.calories} cal, {food.unit}
-                              {food.brand ? `, ${food.brand}` : ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center ml-4 gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (fav) {
-                                  setFavorites(favorites.filter(id => id !== food.id));
-                                } else {
-                                  setFavorites([...favorites, food.id]);
-                                }
-                              }}
-                              className="w-8 h-8 flex items-center justify-center text-yellow-400"
-                              aria-label="Favori"
-                            >
-                              <Star size={20} fill={fav ? 'currentColor' : 'none'} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddFood(food);
-                              }}
-                              className="w-9 h-9 rounded-full bg-blue-600 text-white text-lg flex items-center justify-center"
-                              aria-label="Ajouter rapidement"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="space-y-3">
