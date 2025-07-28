@@ -4,7 +4,7 @@ import FoodSearchHeader from './FoodSearchHeader';
 import { FoodItem } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import QRScanner from './QRScanner';
-import { OFFProduct, searchProductFallback } from '../utils/openFoodFacts';
+import { OFFProduct, searchOpenFoodFacts } from '../utils/openFoodFacts';
 import FoodDetailModal from './FoodDetailModal';
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 
@@ -114,8 +114,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
         setExternalFoods([]);
         return;
       }
-      if (filteredFoods.length > 0) return;
-      const results = await searchProductFallback(searchTerm);
+      const results = await searchOpenFoodFacts(searchTerm);
       const mapped: FoodItem[] = results.slice(0, 5).map(p => ({
         id: p.code,
         name: p.product_name || 'Produit',
@@ -136,7 +135,7 @@ const FoodSearch: React.FC<FoodSearchProps> = ({ onAddFood }) => {
       setExternalFoods(mapped);
     };
     fetchExternal();
-  }, [searchTerm, filteredFoods.length]);
+  }, [searchTerm]);
 
 
   const [newFood, setNewFood] = useState({
