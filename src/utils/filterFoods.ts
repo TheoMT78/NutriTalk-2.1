@@ -36,22 +36,33 @@ export function filterFoods(foods: FoodItem[], query: string): FoodItem[] {
  * match on the name or any synonym. If none is found, it falls back to the same
  * prefix logic as {@link filterFoods} and returns the first match.
  */
-export function getFoodFromParsedText(
+/**
+ * Return the best matching food for the parsed text.
+ *
+ * 1. Exact match on the `name` field.
+ * 2. Exact match on any of the `synonyms`.
+ * 3. Prefix match on words from the name or its synonyms.
+ */
+export function findFoodMatch(
   foods: FoodItem[],
   parsed: string
 ): FoodItem | undefined {
   const nq = normalizeString(parsed);
 
-  const exact = foods.find(
-    f =>
-      normalizeString(f.name) === nq ||
-      (f.synonyms && f.synonyms.some(s => normalizeString(s) === nq))
-  );
-  if (exact) return exact;
+  // 1. exact match on name
+  let found = foods.find(f => normalizeString(f.name) === nq);
+  if (found) return found;
 
-  return foods.find(f => {
+  // 2. exact match on synonyms
+  found = foods.find(f => (f.synonyms || []).some(s => normalizeString(s) === nq));
+  if (found) return found;
+
+  // 3. prefix match on any word in name or synonyms
+  found = foods.find(f => {
     const mots = normalizeString(f.name).split(' ');
     const synos = (f.synonyms || []).map(normalizeString);
     return mots.concat(synos).some(mot => mot.startsWith(nq));
   });
+
+  return found;
 }

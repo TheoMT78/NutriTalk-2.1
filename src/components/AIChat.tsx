@@ -4,7 +4,7 @@ import { searchNutrition } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
-import { filterFoods, getFoodFromParsedText } from '../utils/filterFoods';
+import { filterFoods, findFoodMatch } from '../utils/filterFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
 import { parseFoodsFromInput } from '../utils/parseFoodsFromInput';
@@ -119,7 +119,7 @@ const AIChat: React.FC<AIChatProps> = ({
 
     for (const food of parsed) {
       const baseName = normalizeFoodName(food.name);
-      const exact = getFoodFromParsedText(fullFoodBase, baseName);
+      const exact = findFoodMatch(fullFoodBase, baseName);
       const matches = exact ? [exact] : filterFoods(fullFoodBase, baseName);
 
       let infos: FoodItem[] = [];
