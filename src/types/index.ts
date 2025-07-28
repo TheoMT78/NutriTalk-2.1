@@ -75,6 +75,8 @@ export interface FoodItem {
   unit: string;
   isFavorite?: boolean;
   isCustom?: boolean;
+  /** Optional search synonyms to improve local matching */
+  synonyms?: string[];
 }
 
 export interface Recipe {
