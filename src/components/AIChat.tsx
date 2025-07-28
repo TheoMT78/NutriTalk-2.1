@@ -4,7 +4,7 @@ import { searchNutrition } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
-import { filterFoods, findFoodMatch } from '../utils/filterFoods';
+import { filterFoods, findFoodMatch, normalizeString } from '../utils/filterFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
 import { parseFoodsFromInput } from '../utils/parseFoodsFromInput';
@@ -116,9 +116,10 @@ const AIChat: React.FC<AIChatProps> = ({
     }
 
     const notFound: string[] = [];
+    const added = new Set<string>();
 
     for (const food of parsed) {
-      const baseName = normalizeFoodName(food.name);
+      const baseName = normalizeString(food.name);
       const exact = findFoodMatch(fullFoodBase, baseName);
       const matches = exact ? [exact] : filterFoods(fullFoodBase, baseName);
 
@@ -146,10 +147,13 @@ const AIChat: React.FC<AIChatProps> = ({
       }
 
       for (const info of infos) {
+        const key = normalizeString(info.name);
+        if (added.has(key)) continue;
+        added.add(key);
         const baseAmount = parseFloat(info.unit) || 100;
         let grams = food.quantity;
         if (food.unit === 'unite') {
-          const w = unitWeights[normalizeFoodName(baseName)] || baseAmount;
+          const w = unitWeights[normalizeFoodName(info.name)] || baseAmount;
           grams = food.quantity * w;
         } else if (food.unit === 'cas') {
           grams = food.quantity * 15;

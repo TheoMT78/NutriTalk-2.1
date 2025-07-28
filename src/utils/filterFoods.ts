@@ -66,3 +66,45 @@ export function findFoodMatch(
 
   return found;
 }
+
+/**
+ * Given multiple parsed food names, return at most one unique match for each
+ * keeping the order of queries. Matching rules are the same as
+ * {@link findFoodMatch} and duplicates are removed based on normalized names.
+ */
+export function findUniqueFoods(
+  foods: FoodItem[],
+  queries: string[]
+): FoodItem[] {
+  const results: FoodItem[] = [];
+  queries.forEach(query => {
+    const nq = normalizeString(query);
+
+    // 1. Exact match on the name
+    let match = foods.find(f => normalizeString(f.name) === nq);
+
+    // 2. Exact match on synonyms
+    if (!match) {
+      match = foods.find(f =>
+        (f.synonyms || []).some(s => normalizeString(s) === nq)
+      );
+    }
+
+    // 3. Prefix match on words from name or synonyms
+    if (!match) {
+      match = foods.find(f => {
+        const mots = normalizeString(f.name).split(' ');
+        const synos = (f.synonyms || []).map(normalizeString);
+        return mots.concat(synos).some(mot => mot.startsWith(nq));
+      });
+    }
+
+    if (
+      match &&
+      !results.find(r => normalizeString(r.name) === normalizeString(match!.name))
+    ) {
+      results.push(match);
+    }
+  });
+  return results;
+}
