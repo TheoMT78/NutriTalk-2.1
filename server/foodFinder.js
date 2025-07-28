@@ -71,6 +71,9 @@ function isComplete(obj) {
 }
 
 // ------------------ OPEN FOOD FACTS ------------------
+/**
+ * Search a specific food in OpenFoodFacts and return the best match.
+ */
 export async function searchOpenFoodFacts(food) {
   const url =
     'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' +
@@ -98,6 +101,97 @@ export async function searchOpenFoodFacts(food) {
     return result;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Suggest multiple foods from OpenFoodFacts matching the query.
+ */
+export async function suggestOpenFoodFacts(query) {
+  const url =
+    'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' +
+    encodeURIComponent(query) +
+    '&search_simple=1&action=process&json=1&page_size=20&fields=product_name,nutriments';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const products = data.products || [];
+    const norm = normalizeName(query);
+    let results = products
+      .filter(p => normalizeName(p.product_name || '').includes(norm))
+      .map(p => {
+        const nutr = p.nutriments || {};
+        return mapResult(p.product_name, {
+          energy_kcal: nutr['energy-kcal_100g'],
+          proteins_g: nutr.proteins_100g,
+          carbohydrates_g: nutr.carbohydrates_100g,
+          fat_g: nutr.fat_100g,
+          sugars_g: nutr.sugars_100g,
+          fiber_g: nutr.fiber_100g,
+          salt_g: nutr.salt_100g
+        });
+      });
+    if (results.length === 0 && products.length) {
+      const names = products.map(p => normalizeName(p.product_name || ''));
+      const matches = findBestMatch(norm, names).ratings.filter(r => r.rating >= 0.6);
+      results = matches.map(m => {
+        const p = products[names.indexOf(m.target)];
+        const nutr = p.nutriments || {};
+        return mapResult(p.product_name, {
+          energy_kcal: nutr['energy-kcal_100g'],
+          proteins_g: nutr.proteins_100g,
+          carbohydrates_g: nutr.carbohydrates_100g,
+          fat_g: nutr.fat_100g,
+          sugars_g: nutr.sugars_100g,
+          fiber_g: nutr.fiber_100g,
+          salt_g: nutr.salt_100g
+        });
+      });
+    }
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Query the USDA FoodData Central API for foods matching the query.
+ */
+export async function searchUsda(query) {
+  const apiKey = process.env.USDA_API_KEY;
+  if (!apiKey) return [];
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    query,
+    pageSize: '20',
+    dataType: ['Foundation', 'SR Legacy']
+  });
+  const url = 'https://api.nal.usda.gov/fdc/v1/foods/search?' + params.toString();
+  try {
+    const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const foods = data.foods || [];
+    const results = foods.map(f => {
+      const n = f.foodNutrients || [];
+      const getVal = num => {
+        const found = n.find(nn => String(nn.nutrientNumber) === String(num));
+        return found ? parseFloat(found.value) : undefined;
+      };
+      return mapResult(f.description, {
+        energy_kcal: getVal(1008),
+        proteins_g: getVal(1003),
+        carbohydrates_g: getVal(1005),
+        fat_g: getVal(1004),
+        sugars_g: getVal(2000),
+        fiber_g: getVal(1079),
+        salt_g: getVal(1093) ? getVal(1093) / 1000 : undefined // mg -> g
+      });
+    });
+    return results;
+  } catch {
+    return [];
   }
 }
 
@@ -147,6 +241,25 @@ export function searchCiqual(food) {
   } catch (e) {
     console.error(e);
     return null;
+  }
+}
+
+/**
+ * Return all Ciqual foods whose name matches the query.
+ */
+export function searchCiqualMany(query) {
+  try {
+    const data = loadCiqual();
+    const norm = normalizeName(query);
+    let entries = data.filter(d => d._norm.includes(norm));
+    if (entries.length === 0) {
+      const names = data.map(d => d._norm);
+      const matches = findBestMatch(norm, names).ratings.filter(r => r.rating >= 0.6);
+      entries = matches.map(m => data[names.indexOf(m.target)]);
+    }
+    return entries.map(({ _norm, ...rest }) => mapResult(rest.food_name, rest));
+  } catch {
+    return [];
   }
 }
 
@@ -218,6 +331,25 @@ export async function searchFineli(food) {
   }
 }
 
+/**
+ * Return all Fineli foods matching the query.
+ */
+export async function searchFineliMany(query) {
+  try {
+    const data = await loadFineli();
+    const norm = normalizeName(query);
+    let entries = data.filter(d => d._norm.includes(norm));
+    if (entries.length === 0) {
+      const names = data.map(d => d._norm);
+      const matches = findBestMatch(norm, names).ratings.filter(r => r.rating >= 0.6);
+      entries = matches.map(m => data[names.indexOf(m.target)]);
+    }
+    return entries.map(({ _norm, ...rest }) => mapResult(rest.food_name, rest));
+  } catch {
+    return [];
+  }
+}
+
 // ------------------ MAIN FUNCTION ------------------
 export async function find_and_suggest_food(food_name) {
   const variants = getVariants(food_name);
@@ -230,4 +362,22 @@ export async function find_and_suggest_food(food_name) {
   const fineliRes = await searchFineli(food_name);
   if (fineliRes) return { ...fineliRes, source: 'fineli' };
   return null;
+}
+
+/**
+ * Advanced search returning multiple suggestions following the order:
+ * OpenFoodFacts -> USDA -> local Excel/CSV data.
+ */
+export async function advancedFoodSearch(query) {
+  let results = await suggestOpenFoodFacts(query);
+  if (results.length) return results.map(r => ({ ...r, source: 'openfoodfacts' }));
+
+  results = await searchUsda(query);
+  if (results.length) return results.map(r => ({ ...r, source: 'usda' }));
+
+  results = searchCiqualMany(query).map(r => ({ ...r, source: 'ciqual' }));
+  if (results.length) return results;
+
+  results = await searchFineliMany(query);
+  return results.map(r => ({ ...r, source: 'fineli' }));
 }
