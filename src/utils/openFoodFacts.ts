@@ -118,3 +118,30 @@ export async function searchProductFallback(query: string): Promise<OFFProduct[]
     return [];
   }
 }
+
+export function normalizeString(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+export async function searchOpenFoodFacts(query: string): Promise<OFFProduct[]> {
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&json=1`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  const data = await safeJson(response);
+  const q = normalizeString(query);
+  const products = (data?.products || []) as OFFProduct[];
+  return products
+    .filter((p) => p.product_name && normalizeString(p.product_name).includes(q))
+    .sort((a, b) => {
+      const nameA = normalizeString(a.product_name);
+      const nameB = normalizeString(b.product_name);
+      const startsA = nameA.startsWith(q);
+      const startsB = nameB.startsWith(q);
+      if (startsA && !startsB) return -1;
+      if (!startsA && startsB) return 1;
+      return nameA.localeCompare(nameB);
+    });
+}

@@ -16,7 +16,6 @@
   "dependencies": {
     "@zxing/browser": "^0.1.5",
     "dayjs": "^1.11.13",
-    "fuse.js": "^7.1.0",
     "fuzzysort": "^3.1.0",
     "lucide-react": "^0.344.0",
     "prop-types": "^15.8.1",

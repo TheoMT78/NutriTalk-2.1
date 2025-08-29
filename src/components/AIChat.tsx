@@ -2,10 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
 import { searchNutritionLinks } from '../utils/api';
-import { findFoodSmart } from '../utils/findFoodSmart';
 import { normalizeFoodName } from '../utils/normalizeFoodName';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
-import { keywordFoods } from '../data/keywordFoods';
+import { filterFoods, findFoodMatch, normalizeString } from '../utils/filterFoods';
 import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
 import { parseFoodsFromInput } from '../utils/parseFoodsFromInput';
@@ -117,59 +116,69 @@ const AIChat: React.FC<AIChatProps> = ({
     }
 
     const notFound: string[] = [];
+    const added = new Set<string>();
 
     for (const food of parsed) {
-      const baseName = normalizeFoodName(food.name);
-      const fromKeywords = keywordFoods.find(k =>
-        k.keywords.some(kw => baseName.includes(normalizeFoodName(kw)))
-      );
-      let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
-      if (!info) {
-        const { food: found, alternatives } = findFoodSmart(baseName, fullFoodBase);
-        if (alternatives.length > 0 && found) {
-          questions.push(`Tu veux dire ${found.name} ou ${alternatives[0].name} ?`);
-          continue;
-        }
-        if (found) info = found as FoodItem;
-      }
-      if (!info) {
+      const baseName = normalizeString(food.name);
+      const exact = findFoodMatch(fullFoodBase, baseName);
+      const matches = exact ? [exact] : filterFoods(fullFoodBase, baseName);
+
+      let infos: FoodItem[] = [];
+      if (matches.length === 0) {
         const ext = await searchNutrition(`${food.name} ${food.brand || ''}`.trim());
         if (ext) {
-          info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
+          infos = [
+            {
+              name: ext.name,
+              calories: ext.calories || 0,
+              protein: ext.protein || 0,
+              carbs: ext.carbs || 0,
+              fat: ext.fat || 0,
+              category: 'Importé',
+              unit: ext.unit || '100g'
+            } as FoodItem
+          ];
+        } else {
+          notFound.push(food.name);
+          continue;
         }
+      } else {
+        infos = matches;
       }
-      if (!info) {
-        notFound.push(food.name);
-        continue;
+
+      for (const info of infos) {
+        const key = normalizeString(info.name);
+        if (added.has(key)) continue;
+        added.add(key);
+        const baseAmount = parseFloat(info.unit) || 100;
+        let grams = food.quantity;
+        if (food.unit === 'unite') {
+          const w = unitWeights[normalizeFoodName(info.name)] || baseAmount;
+          grams = food.quantity * w;
+        } else if (food.unit === 'cas') {
+          grams = food.quantity * 15;
+        } else if (food.unit === 'cac') {
+          grams = food.quantity * 5;
+        }
+        const mult = grams / baseAmount;
+        suggestions.push({
+          name: info.name,
+          quantity: food.quantity,
+          unit: food.unit,
+          calories: info.calories * mult,
+          protein: info.protein * mult,
+          carbs: info.carbs * mult,
+          fat: info.fat * mult,
+          fiber: info.fiber ? info.fiber * mult : 0,
+          vitaminA: info.vitaminA ? info.vitaminA * mult : 0,
+          vitaminC: info.vitaminC ? info.vitaminC * mult : 0,
+          calcium: info.calcium ? info.calcium * mult : 0,
+          iron: info.iron ? info.iron * mult : 0,
+          category: info.category,
+          meal,
+          confidence: exact ? 0.9 : info.category === 'Importé' ? 0.5 : 0.6
+        });
       }
-      const baseAmount = parseFloat(info.unit) || 100;
-      let grams = food.quantity;
-      if (food.unit === "unite") {
-        const w = unitWeights[normalizeFoodName(baseName)] || baseAmount;
-        grams = food.quantity * w;
-      } else if (food.unit === "cas") {
-        grams = food.quantity * 15;
-      } else if (food.unit === "cac") {
-        grams = food.quantity * 5;
-      }
-      const mult = grams / baseAmount;
-      suggestions.push({
-        name: info.name,
-        quantity: food.quantity,
-        unit: food.unit,
-        calories: info.calories * mult,
-        protein: info.protein * mult,
-        carbs: info.carbs * mult,
-        fat: info.fat * mult,
-        fiber: info.fiber ? info.fiber * mult : 0,
-        vitaminA: info.vitaminA ? info.vitaminA * mult : 0,
-        vitaminC: info.vitaminC ? info.vitaminC * mult : 0,
-        calcium: info.calcium ? info.calcium * mult : 0,
-        iron: info.iron ? info.iron * mult : 0,
-        category: info.category,
-        meal,
-        confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
-      });
     }
     return { suggestions, questions, notFound };
   };
